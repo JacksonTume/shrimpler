@@ -759,10 +759,10 @@ that neutrality now has to hold in public artifacts and be actively moderated �
   actor forks honest, and the AGPL network clause closes the hosted-service loophole for
   any future server-side component (metadata proxy, account/sync service). In a
   scrutinized category that defensive posture is worth the reduced permissiveness.
-- **Contributions** are inbound-under-the-same-license (AGPL-3.0-or-later). Default to a
-  **DCO** (Developer Certificate of Origin, `Signed-off-by` on commits) rather than a CLA
-  — lighter weight for a solo-led project and sufficient for provenance. Optionally add a
-  CLA later only if a relicense path ever needs to be preserved.
+- **Contributions** are inbound-under-the-same-license (AGPL-3.0-or-later). No DCO
+  sign-off and no CLA — opening a PR confirms the contributor has the right to submit
+  the work under the project license. Optionally add a CLA later only if a relicense
+  path ever needs to be preserved.
 
 ### 14.2 Trademark — held separately from the code license
 
@@ -802,11 +802,11 @@ consistently.
 LICENSE                    # AGPL-3.0 full text
 NOTICE                     # neutral-tool disclaimer (§14.3)
 README.md                  # neutral framing in header; Trademark + Disclaimer sections
-CONTRIBUTING.md            # DCO/sign-off; the §14.3 neutrality rule; boundary rules (§2.2)
+CONTRIBUTING.md            # same-license contributions; the §14.3 neutrality rule; boundary rules (§2.2)
 CODE_OF_CONDUCT.md         # standard (e.g. Contributor Covenant)
 .github/
   ISSUE_TEMPLATE/          # bug / feature; steer away from source-sharing requests
-  PULL_REQUEST_TEMPLATE.md # checklist incl. "no bundled/default sources", sign-off
+  PULL_REQUEST_TEMPLATE.md # checklist incl. "no bundled/default sources"
   workflows/ci.yml         # lint + boundary checks (§3) + typecheck + tests
 /docs/TECHNICAL_SPEC.md    # this document
 /docs/adr/                 # ADR-0001 … ADR-0009 stubs (§12)
