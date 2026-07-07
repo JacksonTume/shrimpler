@@ -35,6 +35,6 @@ Engine behaviours accepted as-is (validated by the spike and its tests):
 ## Consequences
 
 The RN-TV shell (Phase 2) uses native D-pad focus, not this engine — only the
-seam's *concepts* (focusable, container memory, back stack) should be
+seam's _concepts_ (focusable, container memory, back stack) should be
 mirrored there. Revisit if webOS pointer ("magic remote") support demands a
 hybrid pointer+spatial model in Phase 3.
