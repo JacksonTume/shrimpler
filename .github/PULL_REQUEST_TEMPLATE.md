@@ -14,4 +14,3 @@
 - [ ] New source files carry the SPDX header
       (`// SPDX-License-Identifier: AGPL-3.0-or-later`).
 - [ ] User-facing strings routed through the labels module, not hard-coded.
-- [ ] All commits are signed off (`git commit -s`, DCO).

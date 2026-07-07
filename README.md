@@ -49,8 +49,7 @@ Individual checks: `pnpm lint`, `pnpm depcruise`, `pnpm typecheck`,
 `pnpm test`, `pnpm build`.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR — note especially
-the project-scope rules (no bundled sources of any kind) and the DCO
-sign-off requirement.
+the project-scope rules (no bundled sources of any kind).
 
 ## Trademark
 
@@ -69,5 +68,5 @@ add and for complying with the laws that apply to them.
 ## License
 
 [AGPL-3.0-or-later](LICENSE). Every source file carries an SPDX header.
-Contributions are accepted under the same license with a DCO sign-off
+Contributions are accepted under the same license
 (see [CONTRIBUTING.md](CONTRIBUTING.md)).

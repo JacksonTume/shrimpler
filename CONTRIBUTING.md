@@ -1,8 +1,7 @@
 # Contributing to Shrimpler
 
-Thanks for your interest! Please read this whole page — two things here are
-non-negotiable and PRs that miss them will be closed: the **project scope
-rules** and the **DCO sign-off**.
+Thanks for your interest! Please read this whole page — the **project scope
+rules** are non-negotiable and PRs that miss them will be closed.
 
 ## Project scope — what will not be merged
 
@@ -45,19 +44,11 @@ These rules are enforced in CI by dependency-cruiser
 (`.dependency-cruiser.cjs`) and by core's DOM-less tsconfig. `pnpm depcruise`
 must pass before you push.
 
-## Developer Certificate of Origin (DCO)
+## License of contributions
 
 Contributions are accepted under the project license (AGPL-3.0-or-later),
-inbound-under-the-same-license. Every commit must be signed off:
-
-```sh
-git commit -s -m "Your change"
-```
-
-This adds a `Signed-off-by: Your Name <you@example.com>` trailer certifying
-the [Developer Certificate of Origin](https://developercertificate.org/) —
-that you have the right to submit the work under the project license. PRs
-with unsigned commits will not be merged.
+inbound-under-the-same-license. By opening a PR you confirm you have the
+right to submit the work under that license.
 
 ## Practical checklist
 
