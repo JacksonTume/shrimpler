@@ -44,6 +44,8 @@ module.exports = {
     doNotFollow: { path: "node_modules" },
     tsConfig: { fileName: "tsconfig.base.json" },
     tsPreCompilationDeps: true,
-    exclude: { path: "\\.test\\.tsx?$" },
+    // Tests and build output (Vite chunks legitimately cross-reference) are
+    // not part of the source graph.
+    exclude: { path: ["\\.test\\.tsx?$", "(^|/)dist/"] },
   },
 };
