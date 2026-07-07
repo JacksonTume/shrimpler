@@ -14,3 +14,4 @@ propose changes to one by opening a new superseding ADR, not by editing.
 | [ADR-0007](ADR-0007-neutrality.md)                | Neutrality: empty-by-default, add-by-URL only, labels module        |
 | [ADR-0008](ADR-0008-player-adapter-contract.md)   | `PlayerAdapter` single contract spanning VOD / live / torrent-later |
 | [ADR-0009](ADR-0009-agpl-license.md)              | License: AGPL-3.0-or-later; name held separately                    |
+| [ADR-0010](ADR-0010-spatial-navigation-engine.md) | Web-shell spatial navigation: Norigin engine behind a local seam    |

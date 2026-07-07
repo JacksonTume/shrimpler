@@ -48,6 +48,10 @@ pnpm verify     # lint + boundary check + typecheck + tests + build
 Individual checks: `pnpm lint`, `pnpm depcruise`, `pnpm typecheck`,
 `pnpm test`, `pnpm build`.
 
+In the dev server, the **"Show focus spike"** button (top-right, dev builds
+only) opens the spatial-navigation test screen — drive it with arrow keys,
+Enter, and Escape/Backspace (see ADR-0010).
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR — note especially
 the project-scope rules (no bundled sources of any kind).
 
