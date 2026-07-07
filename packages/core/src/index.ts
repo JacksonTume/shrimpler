@@ -38,6 +38,20 @@ export type {
 } from "./adapters/index";
 
 export type { AddonEngine } from "./addon/index";
+export {
+  createAddonEngine,
+  DEFAULT_ADDON_TIMEOUTS,
+  AddonInstallError,
+  AddonTimeoutError,
+  normalizeManifestUrl,
+} from "./addon/index";
+export type {
+  AddonEngineDeps,
+  AddonEngineError,
+  AddonEngineErrorHandler,
+  AddonEngineTimeouts,
+} from "./addon/index";
+export { rankStreams, parseResolution } from "./ranking/index";
 export type {
   MetadataProvider,
   MetadataResolver,

@@ -1,5 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// TODO(Phase 1): manifest fetching/parsing, resource clients
-// (GET /{resource}/{type}/{id}.json), fan-out with per-addon timeouts and
-// partial-failure isolation (§6.1–§6.2).
+// Addon engine (§6): protocol client, manifest parsing, resource clients,
+// fan-out with per-addon timeouts and partial-failure isolation.
 export type { AddonEngine } from "./engine";
+export { createAddonEngine, DEFAULT_ADDON_TIMEOUTS } from "./create-engine";
+export type {
+  AddonEngineDeps,
+  AddonEngineError,
+  AddonEngineErrorHandler,
+  AddonEngineTimeouts,
+} from "./create-engine";
+export {
+  AddonInstallError,
+  normalizeManifestUrl,
+  parseManifest,
+  servesResource,
+} from "./manifest";
+export { AddonTimeoutError } from "./timeout";
