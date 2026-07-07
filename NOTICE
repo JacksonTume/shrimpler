@@ -1,0 +1,23 @@
+Shrimpler
+Copyright (C) 2026 Jackson
+
+This program is free software, licensed under the GNU Affero General Public
+License v3.0 or later (AGPL-3.0-or-later). See the LICENSE file.
+
+Disclaimer
+----------
+Shrimpler is a media player. It hosts, stores, and distributes no content.
+The application ships empty: users supply their own sources (addon manifest
+URLs, IPTV playlists, and optional service credentials), and users are
+responsible for the legality of the sources they add.
+
+Trademark
+---------
+The "Shrimpler" name and any associated logos are held by Jackson separately
+from the code license. The AGPL covers the code, not the marks: anyone may
+fork and ship this code under the AGPL, but a fork may not call itself
+"Shrimpler" or use the marks in a way that implies it is the official project.
+
+Shrimpler is compatible with the Stremio addon protocol. "Stremio" is a
+trademark of its respective owner; Shrimpler is not affiliated with or
+endorsed by Stremio.

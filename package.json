@@ -1,0 +1,29 @@
+{
+  "name": "shrimpler-monorepo",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "packageManager": "pnpm@10.12.3",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "depcruise": "depcruise packages --config .dependency-cruiser.cjs",
+    "dev": "pnpm --filter @shrimpler/shell-web dev",
+    "build": "pnpm --filter @shrimpler/shell-web build",
+    "verify": "pnpm lint && pnpm depcruise && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "dependency-cruiser": "^16.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.2.0"
+  }
+}

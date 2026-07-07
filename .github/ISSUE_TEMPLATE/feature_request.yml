@@ -1,0 +1,29 @@
+name: Feature request
+description: Propose an improvement to the player or its architecture.
+labels: ["enhancement"]
+body:
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      description: >-
+        Bundled/default sources, in-app source directories, and source
+        recommendations are permanently out of scope (CONTRIBUTING.md explains
+        why). Such requests will be closed.
+      options:
+        - label: >-
+            This request does not ask for bundled sources, a source directory,
+            or source recommendations, and does not link to content sources.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true

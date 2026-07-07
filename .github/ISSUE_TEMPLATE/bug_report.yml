@@ -1,0 +1,38 @@
+name: Bug report
+description: Something in Shrimpler doesn't work as documented.
+labels: ["bug"]
+body:
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      description: >-
+        Shrimpler is a neutral media player — see CONTRIBUTING.md. Issues about
+        specific content sources cannot be acted on.
+      options:
+        - label: >-
+            This issue does not request bundled sources, does not name specific
+            addon/IPTV providers, and does not link to content sources.
+          required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: >-
+        What did you do, what did you expect, what happened instead? If a
+        source is involved, describe it generically (e.g. "an HLS live stream
+        behind custom headers") — do not name or link it.
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      placeholder: e.g. Chrome 138 / Windows 11, Firefox / Ubuntu
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console output / logs
+      render: text
