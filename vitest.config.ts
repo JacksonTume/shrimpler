@@ -11,7 +11,14 @@ export default defineConfig({
           include: ["packages/core/src/**/*.test.ts"],
         },
       },
-      // shared-ui / shell-web projects are added once they grow tests.
+      {
+        test: {
+          name: "shell-web",
+          environment: "jsdom",
+          include: ["packages/shell-web/src/**/*.test.{ts,tsx}"],
+        },
+      },
+      // a shared-ui project is added once it grows tests.
     ],
   },
 });
