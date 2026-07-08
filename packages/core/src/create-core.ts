@@ -12,6 +12,8 @@ import { createTtlCache } from "./cache";
 import type { DebridProvider } from "./debrid/index";
 import { createStreamService } from "./streams/index";
 import type { StreamService } from "./streams/index";
+import { createLibrary } from "./library/index";
+import type { Library } from "./library/index";
 import { createAddonEngine } from "./addon/index";
 import type {
   AddonEngine,
@@ -61,7 +63,12 @@ export interface Core {
    * debrid resolution of a chosen one. Composes addons + metadata + debrid.
    */
   readonly streams: StreamService;
-  // TODO(Phase 1): library / continue-watching surfaces hang off here too (§10).
+  /**
+   * Library/state (§3, §10 step 8, ADR-0014): continue-watching persistence,
+   * fed by player `timeupdate`. Watchlist + installed-sources surfaces grow
+   * here later.
+   */
+  readonly library: Library;
 }
 
 /**
@@ -86,6 +93,7 @@ export async function createCore(deps: CoreDependencies): Promise<Core> {
     metadata,
     debrid: deps.debrid,
   });
+  const library = createLibrary({ storage: deps.storage });
   return {
     adapters: {
       storage: deps.storage,
@@ -97,5 +105,6 @@ export async function createCore(deps: CoreDependencies): Promise<Core> {
     metadata,
     debrid: deps.debrid,
     streams,
+    library,
   };
 }

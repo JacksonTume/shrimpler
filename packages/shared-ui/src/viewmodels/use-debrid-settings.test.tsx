@@ -92,7 +92,9 @@ describe("useDebridSettings", () => {
     expect(setSpy).toHaveBeenCalledWith(REAL_DEBRID_TOKEN_STORAGE_KEY, "tok");
     expect(reloadCore).toHaveBeenCalledTimes(1);
     expect(result.current.justSaved).toBe(true);
-    await expect(storage.get(REAL_DEBRID_TOKEN_STORAGE_KEY)).resolves.toBe("tok");
+    await expect(storage.get(REAL_DEBRID_TOKEN_STORAGE_KEY)).resolves.toBe(
+      "tok",
+    );
   });
 
   it("deletes the token when saving an empty value", async () => {

@@ -96,7 +96,9 @@ describe("Html5VideoPlayerAdapter", () => {
     const cb = vi.fn();
     adapter.on("error", cb);
 
-    const pending = adapter.load(source({ behaviorHints: { notWebReady: true } }));
+    const pending = adapter.load(
+      source({ behaviorHints: { notWebReady: true } }),
+    );
     adapter.element.dispatchEvent(new Event("loadedmetadata"));
     await pending;
 

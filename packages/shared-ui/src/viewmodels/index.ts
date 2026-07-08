@@ -16,6 +16,15 @@ export type { UseSearchResult } from "./use-search";
 export { useStreamPicker } from "./use-stream-picker";
 export type { UseStreamPickerResult } from "./use-stream-picker";
 
+export { useWatchProgress } from "./use-watch-progress";
+export type {
+  UseWatchProgressResult,
+  WatchProgressTarget,
+} from "./use-watch-progress";
+
+export { useContinueWatching } from "./use-continue-watching";
+export type { UseContinueWatchingResult } from "./use-continue-watching";
+
 export { useTmdbSettings, TMDB_API_KEY_STORAGE_KEY } from "./use-tmdb-settings";
 export type { UseTmdbSettingsResult } from "./use-tmdb-settings";
 

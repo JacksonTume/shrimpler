@@ -10,8 +10,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { labels } from "@shrimpler/shared-ui";
-import type { PlayableSource, PlayerState } from "@shrimpler/core";
+import { labels, useWatchProgress } from "@shrimpler/shared-ui";
+import type {
+  ContentId,
+  MediaType,
+  PlayableSource,
+  PlayerState,
+} from "@shrimpler/core";
 import { FocusContext, setFocus, useBackHandler, useFocusable } from "../focus";
 import { BackButton } from "../components/BackButton";
 import { Html5VideoPlayerAdapter } from "../players/html5-video";
@@ -41,18 +46,50 @@ function formatTime(totalSec: number): string {
 
 interface PlaybackScreenProps {
   source: PlayableSource;
+  /** The content identity being played — drives continue-watching progress. */
+  contentId: ContentId;
+  type: MediaType;
+  /** Display snapshot for the continue-watching row. */
+  title?: string;
+  poster?: string;
   /** Where Back returns to (the detail it launched from). */
   back: Route;
   onNavigate: (route: Route) => void;
 }
 
-export function PlaybackScreen({ source, back, onNavigate }: PlaybackScreenProps) {
+export function PlaybackScreen({
+  source,
+  contentId,
+  type,
+  title,
+  poster,
+  back,
+  onNavigate,
+}: PlaybackScreenProps) {
   const playerRef = useRef<Html5VideoPlayerAdapter | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [status, setStatus] = useState<PlayerState["status"]>("loading");
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  // Continue-watching: record progress on timeupdate (throttled) + on
+  // pause/ended/unmount (flush); resume from the saved position once loaded.
+  const { resumePositionSec, record, flush } = useWatchProgress({
+    id: contentId,
+    type,
+    name: title,
+    poster,
+  });
+  // Mirror the live values into refs so the player-lifetime effect (keyed on
+  // source) can read the latest without re-subscribing.
+  const recordRef = useRef(record);
+  recordRef.current = record;
+  const flushRef = useRef(flush);
+  flushRef.current = flush;
+  const positionRef = useRef(0);
+  const durationRef = useRef(0);
+  const resumedRef = useRef(false);
 
   const goBack = useCallback(() => onNavigate(back), [onNavigate, back]);
   useBackHandler(goBack);
@@ -70,16 +107,35 @@ export function PlaybackScreen({ source, back, onNavigate }: PlaybackScreenProps
     element.style.background = "#000";
     containerRef.current?.appendChild(element);
 
+    const trackPosition = (positionSec?: number): void => {
+      if (positionSec !== undefined) {
+        positionRef.current = positionSec;
+        setPosition(positionSec);
+      }
+    };
+
     const unsubscribe = [
       player.on("statuschange", (p) => {
         if (p.status !== undefined) setStatus(p.status);
-        if (p.durationSec !== undefined) setDuration(p.durationSec);
-        if (p.positionSec !== undefined) setPosition(p.positionSec);
+        if (p.durationSec !== undefined) {
+          durationRef.current = p.durationSec;
+          setDuration(p.durationSec);
+        }
+        trackPosition(p.positionSec);
+        // A pause is a good moment to persist the exact position.
+        if (p.status === "paused") {
+          flushRef.current(positionRef.current, durationRef.current);
+        }
       }),
       player.on("timeupdate", (p) => {
-        if (p.positionSec !== undefined) setPosition(p.positionSec);
+        trackPosition(p.positionSec);
+        recordRef.current(positionRef.current, durationRef.current);
       }),
-      player.on("ended", () => setStatus("ended")),
+      player.on("ended", () => {
+        setStatus("ended");
+        // At/near the end this evicts the entry (finished) in the library.
+        flushRef.current(durationRef.current, durationRef.current);
+      }),
       player.on("error", (p) => {
         if (p.error?.fatal === true) {
           setError(labels.playbackError);
@@ -96,10 +152,28 @@ export function PlaybackScreen({ source, back, onNavigate }: PlaybackScreenProps
       for (const dispose of unsubscribe) {
         dispose();
       }
+      // Persist the final position before tearing down (e.g. Back mid-playback).
+      flushRef.current(positionRef.current, durationRef.current);
       player.destroy();
       playerRef.current = null;
     };
   }, [source]);
+
+  // Resume once both the saved position and the media duration are known; seek
+  // a single time so it doesn't fight the user scrubbing.
+  useEffect(() => {
+    if (
+      !resumedRef.current &&
+      resumePositionSec > 0 &&
+      duration > 0 &&
+      resumePositionSec < duration
+    ) {
+      playerRef.current?.seek(resumePositionSec);
+      positionRef.current = resumePositionSec;
+      setPosition(resumePositionSec);
+      resumedRef.current = true;
+    }
+  }, [resumePositionSec, duration]);
 
   const togglePlay = useCallback(() => {
     const player = playerRef.current;

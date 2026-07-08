@@ -126,7 +126,11 @@ describe("StreamService.resolveStream", () => {
 
     const torrent = source({ id: "t", infoHash: "h1", fileIdx: 2 });
     const resolved = await service.resolveStream(torrent);
-    expect(resolved).toEqual({ ...torrent, url: "https://dl/x.mkv", cached: true });
+    expect(resolved).toEqual({
+      ...torrent,
+      url: "https://dl/x.mkv",
+      cached: true,
+    });
     expect(resolve).toHaveBeenCalledWith({
       magnet: undefined,
       infoHash: "h1",
@@ -140,7 +144,9 @@ describe("StreamService.resolveStream", () => {
       addons: { getStreams: () => Promise.resolve([]) },
       metadata: { resolveStreamId: () => Promise.resolve(null) },
     });
-    expect(await service.resolveStream(source({ id: "t", infoHash: "h1" }))).toBeNull();
+    expect(
+      await service.resolveStream(source({ id: "t", infoHash: "h1" })),
+    ).toBeNull();
   });
 
   it("returns null when debrid resolution fails", async () => {
@@ -149,6 +155,8 @@ describe("StreamService.resolveStream", () => {
       metadata: { resolveStreamId: () => Promise.resolve(null) },
       debrid: { id: "fake", resolve: () => Promise.resolve(null) },
     });
-    expect(await service.resolveStream(source({ id: "t", magnet: "magnet:?x" }))).toBeNull();
+    expect(
+      await service.resolveStream(source({ id: "t", magnet: "magnet:?x" })),
+    ).toBeNull();
   });
 });

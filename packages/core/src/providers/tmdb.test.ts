@@ -51,7 +51,9 @@ describe("TmdbProvider.getDetail", () => {
           runtime: 142,
           release_date: "1994-09-23",
           vote_average: 8.7,
-          credits: { cast: [{ name: "Tim Robbins" }, { name: "Morgan Freeman" }] },
+          credits: {
+            cast: [{ name: "Tim Robbins" }, { name: "Morgan Freeman" }],
+          },
         },
     });
     const provider = new TmdbProvider({ http, apiKey: KEY });
@@ -141,12 +143,18 @@ describe("TmdbProvider.getEpisodes", () => {
 describe("TmdbProvider.getFeed", () => {
   it("maps trending list items to previews with tmdb: namespaced ids", async () => {
     const http = mockHttp({
-      [`https://api.themoviedb.org/3/trending/all/week?api_key=${KEY}&page=1`]: {
-        results: [
-          { id: 1, media_type: "movie", title: "A Movie", poster_path: "/a.jpg" },
-          { id: 2, media_type: "tv", name: "A Show" },
-        ],
-      },
+      [`https://api.themoviedb.org/3/trending/all/week?api_key=${KEY}&page=1`]:
+        {
+          results: [
+            {
+              id: 1,
+              media_type: "movie",
+              title: "A Movie",
+              poster_path: "/a.jpg",
+            },
+            { id: 2, media_type: "tv", name: "A Show" },
+          ],
+        },
     });
     const provider = new TmdbProvider({ http, apiKey: KEY });
 
@@ -181,7 +189,12 @@ describe("TmdbProvider.search", () => {
               release_date: "2026-05-14",
               poster_path: "/o.jpg",
             },
-            { id: 5, media_type: "tv", name: "Obs Show", first_air_date: "2020-01-02" },
+            {
+              id: 5,
+              media_type: "tv",
+              name: "Obs Show",
+              first_air_date: "2020-01-02",
+            },
             { id: 9, media_type: "person", name: "Some Actor" },
           ],
         },
@@ -243,9 +256,10 @@ describe("TmdbProvider.getDetailById", () => {
 describe("TmdbProvider.getImdbId", () => {
   it("maps a tmdb: movie id to its IMDb id via /external_ids", async () => {
     const http = mockHttp({
-      [`https://api.themoviedb.org/3/movie/27205/external_ids?api_key=${KEY}`]: {
-        imdb_id: "tt1375666",
-      },
+      [`https://api.themoviedb.org/3/movie/27205/external_ids?api_key=${KEY}`]:
+        {
+          imdb_id: "tt1375666",
+        },
     });
     const provider = new TmdbProvider({ http, apiKey: KEY });
     expect(await provider.getImdbId("tmdb:27205", "movie")).toBe("tt1375666");
@@ -288,7 +302,12 @@ describe("TmdbProvider.getEpisodesById", () => {
       },
       [`https://api.themoviedb.org/3/tv/1396/season/1?api_key=${KEY}`]: {
         episodes: [
-          { season_number: 1, episode_number: 1, name: "Pilot", air_date: "2008-01-20" },
+          {
+            season_number: 1,
+            episode_number: 1,
+            name: "Pilot",
+            air_date: "2008-01-20",
+          },
         ],
       },
     });

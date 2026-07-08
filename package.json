@@ -11,18 +11,22 @@
     "lint": "eslint .",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm -r typecheck && tsc -p scripts/tsconfig.json",
     "test": "vitest run",
     "depcruise": "depcruise packages --config .dependency-cruiser.cjs",
     "dev": "pnpm --filter @shrimpler/shell-web dev",
+    "smoke": "tsx scripts/addon-smoke.ts",
     "build": "pnpm --filter @shrimpler/shell-web build",
     "verify": "pnpm lint && pnpm depcruise && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
+    "@shrimpler/core": "workspace:*",
+    "@types/node": "^22.20.1",
     "dependency-cruiser": "^16.0.0",
     "eslint": "^9.0.0",
     "jsdom": "^29.1.1",
     "prettier": "^3.0.0",
+    "tsx": "^4.23.0",
     "typescript": "^5.8.0",
     "typescript-eslint": "^8.0.0",
     "vitest": "^3.2.0"

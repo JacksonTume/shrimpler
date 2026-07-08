@@ -18,3 +18,4 @@ propose changes to one by opening a new superseding ADR, not by editing.
 | [ADR-0011](ADR-0011-viewmodel-state-contract.md)         | View-model/state contract: plain React state via shared-ui hooks    |
 | [ADR-0012](ADR-0012-title-search-provider-native-ids.md) | Title search + provider-native metadata ids (extends ADR-0003)      |
 | [ADR-0013](ADR-0013-debrid-resolver-real-debrid.md)      | Debrid resolver: Real-Debrid (v1); streams pivot to IMDb ids        |
+| [ADR-0014](ADR-0014-continue-watching-library.md)        | Continue-watching library: data model, keys, throttle, eviction     |

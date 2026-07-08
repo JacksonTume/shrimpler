@@ -35,7 +35,10 @@ function bufferedAhead(video: HTMLVideoElement): number {
     return 0;
   }
   for (let i = 0; i < ranges.length; i += 1) {
-    if (ranges.start(i) <= video.currentTime && video.currentTime <= ranges.end(i)) {
+    if (
+      ranges.start(i) <= video.currentTime &&
+      video.currentTime <= ranges.end(i)
+    ) {
       return ranges.end(i);
     }
   }
@@ -104,9 +107,7 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
     this.on_("playing", () => this.syncStatus());
     this.on_("pause", () => this.syncStatus());
     this.on_("canplay", () => this.syncStatus());
-    this.on_("waiting", () =>
-      this.emit("buffering", { status: "buffering" }),
-    );
+    this.on_("waiting", () => this.emit("buffering", { status: "buffering" }));
     this.on_("timeupdate", () =>
       this.emit("timeupdate", {
         positionSec: this.video.currentTime,
@@ -117,7 +118,10 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
       this.emit("timeupdate", { bufferedSec: bufferedAhead(this.video) }),
     );
     this.on_("ended", () =>
-      this.emit("ended", { status: "ended", positionSec: this.video.currentTime }),
+      this.emit("ended", {
+        status: "ended",
+        positionSec: this.video.currentTime,
+      }),
     );
     this.on_("error", () =>
       this.emit("error", { status: "error", error: mapError(this.video) }),

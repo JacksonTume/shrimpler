@@ -10,10 +10,7 @@ import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Core, MetadataProvider, StorageAdapter } from "@shrimpler/core";
 import { CoreProvider } from "../context/core-context";
-import {
-  TMDB_API_KEY_STORAGE_KEY,
-  useTmdbSettings,
-} from "./use-tmdb-settings";
+import { TMDB_API_KEY_STORAGE_KEY, useTmdbSettings } from "./use-tmdb-settings";
 
 function memoryStorage(seed: Record<string, unknown> = {}): StorageAdapter {
   const map = new Map<string, string>(

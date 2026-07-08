@@ -108,6 +108,10 @@ export function App({ reloadCore }: AppProps) {
         <PlaybackScreen
           onNavigate={setRoute}
           source={route.source}
+          contentId={route.contentId}
+          type={route.type}
+          title={route.title}
+          poster={route.poster}
           back={route.back}
         />
       ) : (
