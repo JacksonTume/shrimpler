@@ -21,6 +21,11 @@ export interface MetadataProvider {
   // routes a namespaced id to the provider whose `id` matches the namespace.
   getDetailById?(id: ContentId, type: MediaType): Promise<MetaDetail | null>;
   getEpisodesById?(id: ContentId): Promise<EpisodeRef[]>;
+  // Map one of this provider's namespaced ids to an IMDb content id so streams
+  // (which key on IMDb ids, ADR-0002) can be fetched for a search result that
+  // has no IMDb id of its own. Returns "tt…" (or "tt…:S:E" for an episode), or
+  // null when no IMDb id is known. Extends ADR-0012's deferred tmdb→imdb hop.
+  getImdbId?(id: ContentId, type: MediaType): Promise<ContentId | null>;
 }
 
 export type FeedKind = "trending" | "popular" | "top_rated" | "user_list";
@@ -43,4 +48,11 @@ export interface MetadataResolver {
   buildHomeFeeds(): Promise<CatalogRow[]>; // when addons supply no catalog
   /** Title search across search-capable providers. Empty query → no results. */
   search(query: string): Promise<MetaPreview[]>;
+  /**
+   * Resolve a content id to the IMDb id streams key on (ADR-0002). An IMDb id
+   * (possibly with :S:E) passes through unchanged; a provider-native id (e.g.
+   * "tmdb:123", from title search) routes to its provider's getImdbId. Returns
+   * null when no IMDb id can be found (no fallback → no streams).
+   */
+  resolveStreamId(id: ContentId, type: MediaType): Promise<ContentId | null>;
 }

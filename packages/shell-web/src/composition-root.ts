@@ -2,19 +2,30 @@
 // Spec §7.3 — the web shell's composition root: wires concrete browser
 // adapters into the pure core. This is the only place the shell and core meet.
 
-import { createCore, TmdbProvider } from "@shrimpler/core";
+import { createCore, RealDebridProvider, TmdbProvider } from "@shrimpler/core";
 import type {
   Core,
+  DebridProvider,
   HttpAdapter,
   HttpOpts,
   HttpResponse,
   MetadataProvider,
   StorageAdapter,
 } from "@shrimpler/core";
-import { TMDB_API_KEY_STORAGE_KEY } from "@shrimpler/shared-ui";
+import {
+  REAL_DEBRID_TOKEN_STORAGE_KEY,
+  TMDB_API_KEY_STORAGE_KEY,
+} from "@shrimpler/shared-ui";
 import { Html5VideoPlayerAdapter } from "./players/html5-video";
 
 const STORAGE_PREFIX = "shrimpler:";
+
+/** url-encode a flat string map as an application/x-www-form-urlencoded body. */
+function encodeForm(params: Record<string, string>): string {
+  return Object.entries(params)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join("&");
+}
 
 // localStorage-backed for now; large datasets (EPG, cache) move to IndexedDB
 // per §7.2. TODO(Phase 2): IndexedDB-backed adapter for the iptv/cache modules.
@@ -54,15 +65,26 @@ class FetchHttpAdapter implements HttpAdapter {
   }
 
   post(url: string, body: unknown, opts?: HttpOpts): Promise<HttpResponse> {
-    return this.request(
-      url,
-      {
-        method: "POST",
-        body: JSON.stringify(body),
-        headers: { "content-type": "application/json" },
-      },
-      opts,
-    );
+    // Form-encoded when the caller asks (debrid REST APIs need it); otherwise
+    // JSON as before. A Record<string,string> body is url-encoded; a string
+    // body is sent as-is (already encoded).
+    const init = opts?.form
+      ? {
+          method: "POST",
+          body:
+            typeof body === "string"
+              ? body
+              : encodeForm(body as Record<string, string>),
+          headers: {
+            "content-type": "application/x-www-form-urlencoded",
+          },
+        }
+      : {
+          method: "POST",
+          body: JSON.stringify(body),
+          headers: { "content-type": "application/json" },
+        };
+    return this.request(url, init, opts);
   }
 
   private async request(
@@ -113,6 +135,23 @@ async function metadataProviders(
     : [new TmdbProvider({ http, apiKey })];
 }
 
+// Real-Debrid resolver (§6.4, ADR-0013). Like the TMDB key, the token is
+// user-supplied and never committed (§14.3): a token entered at runtime via the
+// Settings screen is persisted through the StorageAdapter and takes precedence;
+// in dev a git-ignored .env (VITE_REALDEBRID_TOKEN) is the fallback. Applying a
+// new token rebuilds the core (reloadCore). Absent token → no debrid → the
+// stream picker still lists/ranks but torrent resolve is disabled.
+async function debridProvider(
+  http: HttpAdapter,
+  storage: StorageAdapter,
+): Promise<DebridProvider | undefined> {
+  const stored = await storage.get<string>(REAL_DEBRID_TOKEN_STORAGE_KEY);
+  const token = stored ?? import.meta.env.VITE_REALDEBRID_TOKEN;
+  return token === undefined || token === ""
+    ? undefined
+    : new RealDebridProvider({ http, token });
+}
+
 // Async because the addon engine loads persisted state at startup (see
 // createCore / createAddonEngine) and the TMDB key is read from storage. The
 // shell awaits this before first render, and again on each reloadCore.
@@ -124,6 +163,7 @@ export async function createWebCore(): Promise<Core> {
     http,
     playerFactory: () => new Html5VideoPlayerAdapter(),
     providers: await metadataProviders(http, storage),
+    debrid: await debridProvider(http, storage),
     // Seed of the §13.6 debug channel: surface skipped/failed addons in dev
     // without committing to a UI. Raw engine messages stay out of the product
     // UI (ADR-0007); this is the developer console only.

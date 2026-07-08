@@ -52,6 +52,8 @@ export type {
   AddonEngineTimeouts,
 } from "./addon/index";
 export { rankStreams, parseResolution } from "./ranking/index";
+export { createStreamService } from "./streams/index";
+export type { StreamService, StreamServiceDeps } from "./streams/index";
 export {
   parseId,
   createMetadataResolver,
@@ -69,6 +71,8 @@ export type {
 export { createTtlCache } from "./cache";
 export type { TtlCache, TtlCacheDeps } from "./cache";
 export type { DebridProvider } from "./debrid/index";
+export { RealDebridProvider } from "./debrid/index";
+export type { RealDebridProviderOptions } from "./debrid/index";
 
 export { TmdbProvider } from "./providers/index";
 export type { TmdbProviderOptions } from "./providers/index";

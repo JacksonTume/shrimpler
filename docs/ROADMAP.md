@@ -58,11 +58,26 @@ Target: **a build you actually use** (browser first).
       Streams still need a tmdb→imdb hop (deferred with the stream picker).
       **Future enhancement (not now):** searching by other facets — actor,
       director, genre, year — layered on the same screen (2026-07-08)
-- [ ] **Next up:** Debrid resolver, one provider end-to-end — blocked on
-      provider choice (spec §13.3: Real-Debrid vs AllDebrid vs Premiumize)
-- [ ] Real `Html5VideoPlayerAdapter` + stream picker/playback screen — the
-      detail screen's primary action (play) hangs off this
-- [ ] Library: continue-watching driven by player `timeupdate` (spec §10)
+- [x] Debrid resolver, one provider end-to-end (Real-Debrid, ADR-0013 / §13.3
+      resolved). `RealDebridProvider` in `core/debrid` on the injected
+      `HttpAdapter` (addMagnet → selectFiles → bounded poll → unrestrict;
+      `checkCached` → instantAvailability, best-effort). Token user-supplied,
+      stored locally, applied by rebuilding the core (mirrors the TMDB key);
+      `HttpAdapter` gained an opt-in form-encoded POST body. Wired as
+      `core.debrid` + a `StreamService` (`core.streams`) composing
+      resolveStreamId → `addons.getStreams` → cached-annotate → `rankStreams`
+      (2026-07-08)
+- [x] Real `Html5VideoPlayerAdapter` + stream picker/playback screen — the
+      detail screen's primary action (play). `<video>` wrapper mapping element
+      events to the frozen `PlayerAdapter` contract (native progressive/HLS;
+      hls.js deferred to Phase 2 live). `useStreamPicker` in `@shrimpler/shared-ui`
+      drives a focusable picker overlay from the detail screen; selecting a
+      source resolves via debrid and navigates to `PlaybackScreen` (play/pause/
+      seek/back). The deferred tmdb→imdb hop for streams now lands
+      (`MetadataProvider.getImdbId` + `MetadataResolver.resolveStreamId`,
+      ADR-0013). Runtime Real-Debrid token settings UI (`useDebridSettings`)
+      (2026-07-08)
+- [ ] **Next up:** Library: continue-watching driven by player `timeupdate` (spec §10)
 - [ ] Dev tooling: `scripts/addon-smoke.ts` — drives the real engine in
       plain Node against a manifest URL passed as an argument (must ship
       empty: no bundled/example source URLs, §14.3)
@@ -90,7 +105,7 @@ Target: **a build you actually use** (browser first).
 | ---- | ---------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | 13.1 | Monorepo tooling                         | ✅ pnpm workspaces only; add Turborepo/Nx if build times demand it                                |
 | 13.2 | First shell                              | ✅ Web (Vite + React); RN-TV in Phase 2                                                           |
-| 13.3 | Debrid provider for MVP                  | ⏳ open — pick before the debrid resolver work                                                    |
+| 13.3 | Debrid provider for MVP                  | ✅ Real-Debrid (ADR-0013); debrid seam stays generic for AllDebrid/Premiumize later               |
 | 13.4 | View-model/state contract                | ✅ plain React state; `CoreProvider`/`useCore` + hooks in shared-ui, no external store (ADR-0011) |
 | 13.5 | Subtitle rendering on web-native players | ⏳ open (Phase 3)                                                                                 |
 | 13.6 | Telemetry/debug mode                     | ⏳ open — engine `onError` hook exists as the seed                                                |

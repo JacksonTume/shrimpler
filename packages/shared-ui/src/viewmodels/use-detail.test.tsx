@@ -34,6 +34,7 @@ function createFakeResolver(
     resolveEpisodes: vi.fn(() => Promise.resolve<EpisodeRef[]>([])),
     buildHomeFeeds: vi.fn(() => Promise.resolve([])),
     search: vi.fn(() => Promise.resolve([])),
+    resolveStreamId: vi.fn(() => Promise.resolve<string | null>(null)),
     ...overrides,
   };
 }

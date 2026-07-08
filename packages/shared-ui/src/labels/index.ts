@@ -56,6 +56,20 @@ export const labels = {
   episodesTitle: "Episodes",
   seasonLabel: "Season",
 
+  // Stream picker (§6.3) + playback (§7.1). "Stream" is internal vocabulary;
+  // the presentation layer says "Sources" (§9.2). A chosen source is resolved
+  // to a playable URL via debrid (ADR-0005/0013). Error copy stays generic —
+  // the raw provider message never reaches the UI (ADR-0007).
+  streamsTitle: "Sources",
+  streamsLoading: "Finding sources…",
+  streamsEmpty: "No sources found.",
+  streamResolveError: "Could not play that source. Please try again.",
+  streamNoDebridHint: "Add a debrid token in Settings to play this source.",
+  play: "Play",
+  pause: "Pause",
+  playbackLoading: "Loading…",
+  playbackError: "Could not play this. Please try again.",
+
   // Settings screen. TMDB is a metadata provider (presentation data only,
   // §5.1) — naming it is neutrality-safe; it is not a content source. The key
   // is user-supplied and stored locally, never committed (§14.3).
@@ -65,6 +79,14 @@ export const labels = {
     "Optional. Enables richer metadata (posters, descriptions, episodes). Get a free key at themoviedb.org.",
   tmdbKeyActive: "Metadata provider active",
   tmdbKeyInactive: "No metadata provider configured",
+  // Real-Debrid is a stream resolver, not a content source (ADR-0005/0013):
+  // it turns a source the user already added into a playable link. Naming it is
+  // neutrality-safe. The token is user-supplied and stored locally (§14.3).
+  debridTokenLabel: "Real-Debrid token",
+  debridTokenHint:
+    "Optional. Enables playback of torrent sources through your Real-Debrid account.",
+  debridTokenActive: "Debrid provider active",
+  debridTokenInactive: "No debrid provider configured",
   save: "Save",
   clear: "Clear",
   saved: "Saved",

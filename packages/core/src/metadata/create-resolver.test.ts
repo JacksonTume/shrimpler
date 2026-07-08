@@ -243,6 +243,58 @@ describe("search", () => {
   });
 });
 
+describe("resolveStreamId (tmdb→imdb hop, ADR-0013)", () => {
+  it("passes an IMDb id through unchanged without calling the provider", async () => {
+    const getImdbId = vi.fn(() => Promise.resolve("tt999"));
+    const { resolver } = resolverWith({ provider: { getImdbId } });
+    expect(await resolver.resolveStreamId("tt1", "movie")).toBe("tt1");
+    expect(getImdbId).not.toHaveBeenCalled();
+  });
+
+  it("passes an IMDb episode id (tt…:S:E) through unchanged", async () => {
+    const { resolver } = resolverWith({});
+    expect(await resolver.resolveStreamId("tt1:2:5", "series")).toBe("tt1:2:5");
+  });
+
+  it("routes a tmdb: id to the provider's getImdbId", async () => {
+    const getImdbId = vi.fn(() => Promise.resolve("tt1375666"));
+    const { resolver } = resolverWith({ provider: { getImdbId } });
+    expect(await resolver.resolveStreamId("tmdb:27205", "movie")).toBe(
+      "tt1375666",
+    );
+    expect(getImdbId).toHaveBeenCalledWith("tmdb:27205", "movie");
+  });
+
+  it("re-attaches :S:E to the resolved show IMDb id for an episode", async () => {
+    const getImdbId = vi.fn(() => Promise.resolve("tt0903747"));
+    const { resolver } = resolverWith({ provider: { getImdbId } });
+    expect(await resolver.resolveStreamId("tmdb:1396:2:5", "series")).toBe(
+      "tt0903747:2:5",
+    );
+  });
+
+  it("returns null when the provider has no IMDb id", async () => {
+    const { resolver } = resolverWith({
+      provider: { getImdbId: () => Promise.resolve(null) },
+    });
+    expect(await resolver.resolveStreamId("tmdb:5", "movie")).toBeNull();
+  });
+
+  it("isolates a provider failure and returns null", async () => {
+    const { resolver } = resolverWith({
+      provider: { getImdbId: () => Promise.reject(new Error("tmdb down")) },
+    });
+    expect(await resolver.resolveStreamId("tmdb:5", "movie")).toBeNull();
+  });
+
+  it("returns null for a namespaced id no provider owns", async () => {
+    const getImdbId = vi.fn(() => Promise.resolve("tt1"));
+    const { resolver } = resolverWith({ provider: { getImdbId } });
+    expect(await resolver.resolveStreamId("kitsu:5", "series")).toBeNull();
+    expect(getImdbId).not.toHaveBeenCalled();
+  });
+});
+
 describe("buildHomeFeeds", () => {
   it("composes rows from the first feed-capable provider", async () => {
     const items: MetaPreview[] = [
