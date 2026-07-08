@@ -52,6 +52,32 @@ In the dev server, the **"Show focus spike"** button (top-right, dev builds
 only) opens the spatial-navigation test screen — drive it with arrow keys,
 Enter, and Escape/Backspace (see ADR-0010).
 
+Current status and what to work on next: [docs/ROADMAP.md](docs/ROADMAP.md).
+
+## Testing
+
+```sh
+pnpm test                                # all suites
+npx vitest run --project core            # core package only (plain Node)
+npx vitest run --project shell-web       # web shell only (jsdom)
+npx vitest run packages/core/src/addon/create-engine.test.ts   # one file
+```
+
+Everything runs offline — no suite touches the network:
+
+- **Core** tests run in plain Node (this doubles as the §2.2 core-purity
+  litmus test). The addon engine is exercised against an in-memory
+  `StorageAdapter` and a route-table `HttpAdapter`: install/persistence,
+  fan-out, per-addon timeouts, partial-failure isolation, merge/dedup, and
+  stream ranking.
+- **shell-web** tests run in jsdom. The focus spike drives the real
+  spatial-navigation engine with window key events over synthetic element
+  geometry; the back-key stack has plain unit tests.
+
+Manual testing: the dev server covers the home screen and the focus spike.
+There is no UI that exercises the addon engine yet — that arrives with the
+add-by-URL addon manager (see the roadmap).
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR — note especially
 the project-scope rules (no bundled sources of any kind).
 

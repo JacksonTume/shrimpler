@@ -57,3 +57,4 @@ right to submit the work under that license.
   (`packages/shared-ui/src/labels`) — never hard-coded in screens.
 - `pnpm verify` passes locally (lint, depcruise, typecheck, tests, build).
 - Architectural changes get an ADR in `docs/adr/`.
+- If your change lands a `docs/ROADMAP.md` item, check it off there.
