@@ -41,9 +41,27 @@ Target: **a build you actually use** (browser first).
       dev reads a git-ignored `VITE_TMDB_API_KEY`, settings-screen UI deferred to
       the detail screen. `core.metadata` exposes `resolveDetail`/`resolveEpisodes`;
       `buildHomeFeeds`/`getFeed` are minimal (home feeds are Phase 3) (2026-07-08)
+- [x] Detail screen — first UI consumer of `core.metadata`: movie + series
+      detail (`useDetail` in `@shrimpler/shared-ui`, addon-meta-first per
+      ADR-0003), series episode/season list. Runtime TMDB key settings UI
+      (`useTmdbSettings`, persisted via `StorageAdapter`, applied by rebuilding
+      the core). Reachable from the search screen below (and a dev-only "open by
+      ID" trigger). Display-only: no playback until the stream picker lands
+      (2026-07-08)
+- [x] Search screen (find by **title**, ADR-0012) — the detail screen's real
+      entry point (`useSearch` in `@shrimpler/shared-ui`; a title query →
+      results → select → detail). TMDB-backed via a new `TmdbProvider.search`
+      (`/search/multi`) + `MetadataResolver.search`. To make TMDB-only titles
+      openable without an IMDb pivot, results carry `tmdb:<id>` ids that resolve
+      through new provider-native paths — `getDetailById`/`getEpisodesById`,
+      routed by matching `provider.id` to the id namespace in the resolver.
+      Streams still need a tmdb→imdb hop (deferred with the stream picker).
+      **Future enhancement (not now):** searching by other facets — actor,
+      director, genre, year — layered on the same screen (2026-07-08)
 - [ ] **Next up:** Debrid resolver, one provider end-to-end — blocked on
       provider choice (spec §13.3: Real-Debrid vs AllDebrid vs Premiumize)
-- [ ] Real `Html5VideoPlayerAdapter` + stream picker/playback screen
+- [ ] Real `Html5VideoPlayerAdapter` + stream picker/playback screen — the
+      detail screen's primary action (play) hangs off this
 - [ ] Library: continue-watching driven by player `timeupdate` (spec §10)
 - [ ] Dev tooling: `scripts/addon-smoke.ts` — drives the real engine in
       plain Node against a manifest URL passed as an argument (must ship

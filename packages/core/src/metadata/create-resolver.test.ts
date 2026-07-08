@@ -138,6 +138,37 @@ describe("resolveDetail precedence (ADR-0003)", () => {
     });
     expect(await resolver.resolveDetail("tt1", "movie")).toEqual(SPARSE);
   });
+
+  it("resolves a provider-native id via getDetailById (no IMDb pivot)", async () => {
+    const native: MetaDetail = {
+      id: "tmdb:99",
+      type: "movie",
+      name: "TMDB-only Title",
+      description: "No IMDb id at all.",
+      poster: "https://tmdb/p.jpg",
+    };
+    const getDetail = vi.fn(() => Promise.resolve(null));
+    const getDetailById = vi.fn(() => Promise.resolve(native));
+    const { resolver } = resolverWith({
+      getMeta: () => Promise.resolve(null),
+      provider: { getDetail, getDetailById },
+    });
+
+    expect(await resolver.resolveDetail("tmdb:99", "movie")).toEqual(native);
+    expect(getDetailById).toHaveBeenCalledWith("tmdb:99", "movie");
+    expect(getDetail).not.toHaveBeenCalled(); // namespaced id skips the imdb path
+  });
+
+  it("returns null for a namespaced id no provider owns", async () => {
+    const getDetailById = vi.fn(() => Promise.resolve(null));
+    const { resolver } = resolverWith({
+      getMeta: () => Promise.resolve(null),
+      provider: { getDetailById },
+    });
+    // "kitsu:" matches no provider id ("tmdb"), so getDetailById is never called.
+    expect(await resolver.resolveDetail("kitsu:5", "movie")).toBeNull();
+    expect(getDetailById).not.toHaveBeenCalled();
+  });
 });
 
 describe("resolveEpisodes", () => {
@@ -166,6 +197,49 @@ describe("resolveEpisodes", () => {
       provider: { getEpisodes: () => Promise.resolve(PROVIDER_EPS) },
     });
     expect(await resolver.resolveEpisodes("tt1")).toEqual(PROVIDER_EPS);
+  });
+
+  it("resolves episodes for a provider-native series id via getEpisodesById", async () => {
+    const nativeEps: EpisodeRef[] = [
+      { id: "tmdb:7:1:1", season: 1, episode: 1, name: "Native Pilot" },
+    ];
+    const getEpisodes = vi.fn(() => Promise.resolve(PROVIDER_EPS));
+    const getEpisodesById = vi.fn(() => Promise.resolve(nativeEps));
+    const { resolver } = resolverWith({
+      getMeta: () => Promise.resolve(null),
+      provider: { getEpisodes, getEpisodesById },
+    });
+
+    expect(await resolver.resolveEpisodes("tmdb:7")).toEqual(nativeEps);
+    expect(getEpisodesById).toHaveBeenCalledWith("tmdb:7");
+    expect(getEpisodes).not.toHaveBeenCalled();
+  });
+});
+
+describe("search", () => {
+  const RESULTS: MetaPreview[] = [
+    { id: "tmdb:1", type: "movie", name: "Obsession", releaseInfo: "2026" },
+  ];
+
+  it("returns results from the first search-capable provider", async () => {
+    const { resolver } = resolverWith({
+      provider: { search: () => Promise.resolve(RESULTS) },
+    });
+    expect(await resolver.search("obs")).toEqual(RESULTS);
+  });
+
+  it("returns [] for a blank query without calling the provider", async () => {
+    const search = vi.fn(() => Promise.resolve(RESULTS));
+    const { resolver } = resolverWith({ provider: { search } });
+    expect(await resolver.search("   ")).toEqual([]);
+    expect(search).not.toHaveBeenCalled();
+  });
+
+  it("isolates a provider failure and returns []", async () => {
+    const { resolver } = resolverWith({
+      provider: { search: () => Promise.reject(new Error("tmdb down")) },
+    });
+    expect(await resolver.search("obs")).toEqual([]);
   });
 });
 

@@ -12,6 +12,15 @@ export interface MetadataProvider {
   getEpisodes?(imdbId: string): Promise<EpisodeRef[]>;
   // Home-screen feeds (trending/popular/lists) for stream-only setups:
   getFeed?(feed: FeedKind, opts?: FeedOpts): Promise<MetaPreview[]>;
+  // Title search. Results carry provider-native ids (e.g. "tmdb:123"), resolved
+  // back to detail/episodes via the *ById methods below (§5). Optional so
+  // non-search providers still satisfy the interface.
+  search?(query: string): Promise<MetaPreview[]>;
+  // Resolve one of this provider's own namespaced ids ("<provider.id>:…") — the
+  // path that lets a search result open without an IMDb pivot. The resolver
+  // routes a namespaced id to the provider whose `id` matches the namespace.
+  getDetailById?(id: ContentId, type: MediaType): Promise<MetaDetail | null>;
+  getEpisodesById?(id: ContentId): Promise<EpisodeRef[]>;
 }
 
 export type FeedKind = "trending" | "popular" | "top_rated" | "user_list";
@@ -32,4 +41,6 @@ export interface MetadataResolver {
   resolveDetail(id: ContentId, type: MediaType): Promise<MetaDetail | null>;
   resolveEpisodes(id: ContentId): Promise<EpisodeRef[]>;
   buildHomeFeeds(): Promise<CatalogRow[]>; // when addons supply no catalog
+  /** Title search across search-capable providers. Empty query → no results. */
+  search(query: string): Promise<MetaPreview[]>;
 }

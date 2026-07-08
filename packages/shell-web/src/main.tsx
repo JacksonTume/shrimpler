@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { StrictMode } from "react";
+import { StrictMode, useCallback, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { CoreProvider } from "@shrimpler/shared-ui";
+import type { Core } from "@shrimpler/core";
 import { App } from "./App";
 import { createWebCore } from "./composition-root";
 import { initBackHandling, initFocusEngine } from "./focus";
@@ -9,8 +10,26 @@ import { initBackHandling, initFocusEngine } from "./focus";
 initFocusEngine();
 initBackHandling();
 
-// Bootstrap: the core loads persisted addon state asynchronously, so we await
-// it before first render and hand it to the tree via CoreProvider.
+// Root owns the composed Core in state so a settings change (e.g. the TMDB key)
+// can rebuild it: createCore takes its providers at construction, so applying a
+// new key means composing a fresh Core and swapping the CoreProvider value.
+// Addon state and the metadata cache are storage-backed, so a rebuild is cheap
+// and loses nothing.
+function Root({ initialCore }: { initialCore: Core }) {
+  const [core, setCore] = useState<Core>(initialCore);
+  const reloadCore = useCallback(async (): Promise<void> => {
+    setCore(await createWebCore());
+  }, []);
+
+  return (
+    <CoreProvider core={core}>
+      <App reloadCore={reloadCore} />
+    </CoreProvider>
+  );
+}
+
+// Bootstrap: the core loads persisted addon state (and the stored TMDB key)
+// asynchronously, so we await it before first render and hand it to the tree.
 async function bootstrap(): Promise<void> {
   const core = await createWebCore();
 
@@ -21,9 +40,7 @@ async function bootstrap(): Promise<void> {
 
   createRoot(container).render(
     <StrictMode>
-      <CoreProvider core={core}>
-        <App />
-      </CoreProvider>
+      <Root initialCore={core} />
     </StrictMode>,
   );
 }

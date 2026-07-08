@@ -36,6 +36,39 @@ export const labels = {
   disableSource: "Disable",
   back: "Back",
 
+  // Search screen (§5). Title search over metadata providers (TMDB in v1);
+  // results are metadata previews only — never streams (neutrality, §5.1).
+  searchTitle: "Search",
+  searchPlaceholder: "Search by title",
+  searchButton: "Search",
+  searching: "Searching…",
+  searchEmpty: "No results.",
+  searchError: "Could not search. Please try again.",
+
+  // Detail screen (§4.2 MetaDetail, ADR-0003). Presentation of metadata only —
+  // never a stream source. Generic states; no title/id is ever hard-coded here.
+  detailLoading: "Loading…",
+  detailError: "Could not load details. Please try again.",
+  detailEmpty: "No details found.",
+  detailNoProviderHint: "Add a TMDB key in Settings for posters and descriptions.",
+  castTitle: "Cast",
+  genresTitle: "Genres",
+  episodesTitle: "Episodes",
+  seasonLabel: "Season",
+
+  // Settings screen. TMDB is a metadata provider (presentation data only,
+  // §5.1) — naming it is neutrality-safe; it is not a content source. The key
+  // is user-supplied and stored locally, never committed (§14.3).
+  settings: "Settings",
+  tmdbKeyLabel: "TMDB API key",
+  tmdbKeyHint:
+    "Optional. Enables richer metadata (posters, descriptions, episodes). Get a free key at themoviedb.org.",
+  tmdbKeyActive: "Metadata provider active",
+  tmdbKeyInactive: "No metadata provider configured",
+  save: "Save",
+  clear: "Clear",
+  saved: "Saved",
+
   // Mirrored in NOTICE, README, and the About screen (§14.3).
   disclaimer:
     "Shrimpler hosts, stores, and distributes no content. You are responsible for the legality of the sources you add.",

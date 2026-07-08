@@ -167,3 +167,95 @@ describe("TmdbProvider.getFeed", () => {
     expect(await provider.getFeed("user_list")).toEqual([]);
   });
 });
+
+describe("TmdbProvider.search", () => {
+  it("maps /search/multi movie+tv results to previews and skips persons", async () => {
+    const http = mockHttp({
+      [`https://api.themoviedb.org/3/search/multi?api_key=${KEY}&query=obs&page=1`]:
+        {
+          results: [
+            {
+              id: 1339713,
+              media_type: "movie",
+              title: "Obsession",
+              release_date: "2026-05-14",
+              poster_path: "/o.jpg",
+            },
+            { id: 5, media_type: "tv", name: "Obs Show", first_air_date: "2020-01-02" },
+            { id: 9, media_type: "person", name: "Some Actor" },
+          ],
+        },
+    });
+    const provider = new TmdbProvider({ http, apiKey: KEY });
+
+    const results = await provider.search("obs");
+    expect(results).toEqual([
+      {
+        id: "tmdb:1339713",
+        type: "movie",
+        name: "Obsession",
+        poster: "https://image.tmdb.org/t/p/w500/o.jpg",
+        releaseInfo: "2026",
+      },
+      {
+        id: "tmdb:5",
+        type: "series",
+        name: "Obs Show",
+        poster: undefined,
+        releaseInfo: "2020",
+      },
+    ]);
+  });
+
+  it("returns [] when the search has no results", async () => {
+    const provider = new TmdbProvider({ http: mockHttp({}), apiKey: KEY });
+    expect(await provider.search("nothing")).toEqual([]);
+  });
+});
+
+describe("TmdbProvider.getDetailById", () => {
+  it("resolves a tmdb: id straight to detail with no /find hop", async () => {
+    const http = mockHttp({
+      [`https://api.themoviedb.org/3/movie/278?api_key=${KEY}&append_to_response=credits`]:
+        {
+          title: "The Shawshank Redemption",
+          overview: "Two imprisoned men...",
+          runtime: 142,
+          release_date: "1994-09-23",
+        },
+    });
+    const provider = new TmdbProvider({ http, apiKey: KEY });
+
+    const detail = await provider.getDetailById("tmdb:278", "movie");
+    expect(detail?.id).toBe("tmdb:278");
+    expect(detail?.name).toBe("The Shawshank Redemption");
+    expect(detail?.runtime).toBe("142 min");
+    // No IMDb /find call is made for a native id.
+    expect(http.calls.some((u) => u.includes("/find/"))).toBe(false);
+  });
+
+  it("returns null for an id with no numeric tmdb part", async () => {
+    const provider = new TmdbProvider({ http: mockHttp({}), apiKey: KEY });
+    expect(await provider.getDetailById("tmdb:", "movie")).toBeNull();
+  });
+});
+
+describe("TmdbProvider.getEpisodesById", () => {
+  it("expands a tmdb: series id into EpisodeRefs keyed tmdb:<id>:S:E", async () => {
+    const http = mockHttp({
+      [`https://api.themoviedb.org/3/tv/1396?api_key=${KEY}`]: {
+        seasons: [{ season_number: 0 }, { season_number: 1 }],
+      },
+      [`https://api.themoviedb.org/3/tv/1396/season/1?api_key=${KEY}`]: {
+        episodes: [
+          { season_number: 1, episode_number: 1, name: "Pilot", air_date: "2008-01-20" },
+        ],
+      },
+    });
+    const provider = new TmdbProvider({ http, apiKey: KEY });
+
+    const episodes = await provider.getEpisodesById("tmdb:1396");
+    expect(episodes[0]?.id).toBe("tmdb:1396:1:1");
+    expect(episodes[0]?.name).toBe("Pilot");
+  });
+});

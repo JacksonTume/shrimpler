@@ -6,7 +6,7 @@
 import type { AddonEngine } from "../addon/engine";
 import type { TtlCache } from "../cache";
 import type { ContentId, MediaType } from "../types/ids";
-import type { MetaDetail, EpisodeRef } from "../types/meta";
+import type { MetaPreview, MetaDetail, EpisodeRef } from "../types/meta";
 import { parseId } from "./parse-id";
 import type {
   MetadataProvider,
@@ -85,6 +85,16 @@ export function createMetadataResolver(
     return null;
   }
 
+  /** The provider that owns a namespaced id ("<provider.id>:…"), if any. */
+  function providerForNamespace(
+    namespace: string | undefined,
+  ): MetadataProvider | undefined {
+    if (namespace === undefined) {
+      return undefined;
+    }
+    return providers.find((p) => p.id === namespace);
+  }
+
   return {
     resolveDetail(id: ContentId, type: MediaType): Promise<MetaDetail | null> {
       return cache.getOrCompute(`meta/${type}/${id}`, ttls.detailMs, async () => {
@@ -92,7 +102,22 @@ export function createMetadataResolver(
         if (addonMeta !== null && !isSparse(addonMeta)) {
           return addonMeta; // addon is the source of truth (§5.1)
         }
-        const { imdbId } = parseId(id);
+        const { imdbId, namespace } = parseId(id);
+
+        // Provider-native id (e.g. "tmdb:123", from title search) → ask the
+        // owning provider directly; no IMDb pivot needed.
+        const native = providerForNamespace(namespace);
+        if (native?.getDetailById !== undefined) {
+          try {
+            const detail = await native.getDetailById(id, type);
+            if (detail !== null) {
+              return addonMeta === null ? detail : fillGaps(detail, addonMeta);
+            }
+          } catch {
+            // Isolate provider failures (as with the imdb path below).
+          }
+        }
+
         if (imdbId === undefined) {
           return addonMeta; // no pivot → provider fallback can't apply
         }
@@ -111,7 +136,21 @@ export function createMetadataResolver(
         if (addonMeta?.videos !== undefined && addonMeta.videos.length > 0) {
           return addonMeta.videos;
         }
-        const { imdbId } = parseId(id);
+        const { imdbId, namespace } = parseId(id);
+
+        // Provider-native series id → ask the owning provider directly.
+        const native = providerForNamespace(namespace);
+        if (native?.getEpisodesById !== undefined) {
+          try {
+            const episodes = await native.getEpisodesById(id);
+            if (episodes.length > 0) {
+              return episodes;
+            }
+          } catch {
+            // Isolate provider failures.
+          }
+        }
+
         if (imdbId === undefined) {
           return [];
         }
@@ -158,6 +197,29 @@ export function createMetadataResolver(
         }
         return rows;
       });
+    },
+
+    async search(query: string): Promise<MetaPreview[]> {
+      // Not cached: results are query-specific and interactive. TMDB-backed in
+      // v1; addon catalog `search` extra could merge in later (§6.1).
+      const trimmed = query.trim();
+      if (trimmed === "") {
+        return [];
+      }
+      for (const provider of providers) {
+        if (provider.search === undefined) {
+          continue;
+        }
+        try {
+          const results = await provider.search(trimmed);
+          if (results.length > 0) {
+            return results;
+          }
+        } catch {
+          // Isolate provider failures — try the next search-capable provider.
+        }
+      }
+      return [];
     },
   };
 }

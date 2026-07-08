@@ -8,3 +8,15 @@ export { CoreProvider, useCore } from "./context/core-context";
 
 export { useAddonManager } from "./viewmodels/index";
 export type { UseAddonManagerResult } from "./viewmodels/index";
+
+export { useDetail } from "./viewmodels/index";
+export type { UseDetailResult } from "./viewmodels/index";
+
+export { useSearch } from "./viewmodels/index";
+export type { UseSearchResult } from "./viewmodels/index";
+
+export {
+  useTmdbSettings,
+  TMDB_API_KEY_STORAGE_KEY,
+} from "./viewmodels/index";
+export type { UseTmdbSettingsResult } from "./viewmodels/index";
