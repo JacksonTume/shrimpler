@@ -48,16 +48,16 @@ Target: **a build you actually use** (browser first).
       the core). Reachable from the search screen below (and a dev-only "open by
       ID" trigger). Display-only: no playback until the stream picker lands
       (2026-07-08)
-- [x] Search screen (find by **title**) — the detail screen's real entry point
-      (`useSearch` in `@shrimpler/shared-ui`; a title query → results → select →
-      detail). TMDB-backed via a new `TmdbProvider.search` (`/search/multi`) +
-      `MetadataResolver.search`. To make TMDB-only titles openable without an
-      IMDb pivot, results carry `tmdb:<id>` ids that resolve through new
-      provider-native paths — `getDetailById`/`getEpisodesById`, routed by
-      matching `provider.id` to the id namespace in the resolver. Streams still
-      need a tmdb→imdb hop (deferred with the stream picker). **Future
-      enhancement (not now):** searching by other facets — actor, director,
-      genre, year — layered on the same screen (2026-07-08)
+- [x] Search screen (find by **title**, ADR-0012) — the detail screen's real
+      entry point (`useSearch` in `@shrimpler/shared-ui`; a title query →
+      results → select → detail). TMDB-backed via a new `TmdbProvider.search`
+      (`/search/multi`) + `MetadataResolver.search`. To make TMDB-only titles
+      openable without an IMDb pivot, results carry `tmdb:<id>` ids that resolve
+      through new provider-native paths — `getDetailById`/`getEpisodesById`,
+      routed by matching `provider.id` to the id namespace in the resolver.
+      Streams still need a tmdb→imdb hop (deferred with the stream picker).
+      **Future enhancement (not now):** searching by other facets — actor,
+      director, genre, year — layered on the same screen (2026-07-08)
 - [ ] **Next up:** Debrid resolver, one provider end-to-end — blocked on
       provider choice (spec §13.3: Real-Debrid vs AllDebrid vs Premiumize)
 - [ ] Real `Html5VideoPlayerAdapter` + stream picker/playback screen — the
