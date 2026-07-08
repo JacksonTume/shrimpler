@@ -637,6 +637,11 @@ official-store presence is upside pursued via disciplined neutral framing.
 
 ## 10. End-to-end request lifecycle
 
+> The `core.getCatalog(...)` / `core.getStreams(...)` calls below are shorthand.
+> In the code the addon-engine methods (§6.2) are namespaced under
+> `core.addons.*` (e.g. `core.addons.getCatalog(...)`); `core` is a thin
+> container, not a flattened facade.
+
 **VOD, catalog-capable addon:**
 
 ```

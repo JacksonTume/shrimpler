@@ -93,11 +93,19 @@ class FetchHttpAdapter implements HttpAdapter {
   }
 }
 
-export function createWebCore(): Core {
+// Async because the addon engine loads persisted state at startup (see
+// createCore / createAddonEngine). The shell awaits this before first render.
+export function createWebCore(): Promise<Core> {
   return createCore({
     storage: new WebStorageAdapter(),
     http: new FetchHttpAdapter(),
     playerFactory: () => new Html5VideoPlayerAdapter(),
+    // Seed of the §13.6 debug channel: surface skipped/failed addons in dev
+    // without committing to a UI. Raw engine messages stay out of the product
+    // UI (ADR-0007); this is the developer console only.
+    onError: import.meta.env.DEV
+      ? (error) => console.warn("[addon-engine]", error)
+      : undefined,
     // TODO(Phase 1): providers: [new TmdbProvider({ http, apiKey })] once key
     // handling is decided.
   });

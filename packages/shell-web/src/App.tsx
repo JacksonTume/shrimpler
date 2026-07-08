@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { Suspense, lazy, useState } from "react";
 import { HomeScreen } from "./screens/HomeScreen";
+import { AddonManagerScreen } from "./screens/AddonManagerScreen";
+import type { Screen } from "./navigation";
 
 // Dev-only focus spike (§11 Phase 0). Lazy so the chunk is never fetched in
 // production, where the toggle is not rendered.
@@ -12,8 +14,10 @@ const FocusSpikeScreen = lazy(() =>
 
 export function App() {
   const [showSpike, setShowSpike] = useState(false);
-  // TODO(Phase 1): route between screens; provide the core instance via React
-  // context so shared-ui view-models can reach it.
+  // Lightweight state-based routing (no router dependency). Grows a real router
+  // when the screen count justifies it.
+  const [screen, setScreen] = useState<Screen>("home");
+
   return (
     <>
       {import.meta.env.DEV && (
@@ -29,8 +33,10 @@ export function App() {
         <Suspense fallback={null}>
           <FocusSpikeScreen />
         </Suspense>
+      ) : screen === "addons" ? (
+        <AddonManagerScreen onNavigate={setScreen} />
       ) : (
-        <HomeScreen />
+        <HomeScreen onNavigate={setScreen} />
       )}
     </>
   );

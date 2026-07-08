@@ -46,12 +46,14 @@ describe("createCore (§2.2 core-purity smoke test)", () => {
 
   it("wires injected adapters and exposes the composition surface", async () => {
     const storage = createMemoryStorage();
-    const core = createCore({ storage, http: createStubHttp() });
+    const core = await createCore({ storage, http: createStubHttp() });
 
     expect(core.adapters.storage).toBe(storage);
     expect(core.adapters.http).toBeDefined();
     expect(core.providers).toEqual([]);
     expect(core.createPlayer).toBeUndefined();
+    // Addon engine is ready with persisted state loaded (empty on a fresh store).
+    expect(core.addons.list()).toEqual([]);
 
     await core.adapters.storage.set("library:watchlist", ["tt1234567"]);
     await expect(

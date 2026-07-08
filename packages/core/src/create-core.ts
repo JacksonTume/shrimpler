@@ -7,12 +7,22 @@ import type { PlayerAdapter } from "./adapters/player";
 import type { StorageAdapter } from "./adapters/storage";
 import type { HttpAdapter } from "./adapters/http";
 import type { MetadataProvider } from "./metadata/resolver";
+import { createAddonEngine } from "./addon/index";
+import type {
+  AddonEngine,
+  AddonEngineErrorHandler,
+  AddonEngineTimeouts,
+} from "./addon/index";
 
 export interface CoreDependencies {
   storage: StorageAdapter;
   http: HttpAdapter;
   playerFactory?: () => PlayerAdapter;
   providers?: MetadataProvider[];
+  /** Observability hook for skipped/failed addons (seed of the §13.6 debug mode). */
+  onError?: AddonEngineErrorHandler;
+  /** Override the engine's per-resource timeouts (defaults per §6.2). */
+  timeouts?: Partial<AddonEngineTimeouts>;
 }
 
 export interface Core {
@@ -23,11 +33,26 @@ export interface Core {
   readonly providers: readonly MetadataProvider[];
   /** Undefined until the shell supplies a player factory. */
   readonly createPlayer: (() => PlayerAdapter) | undefined;
-  // TODO(Phase 1): addon engine, metadata resolver, debrid resolver, library
-  // surfaces hang off here (§6, §5, §10).
+  /**
+   * Addon engine (§6.2), ready with persisted state loaded. Namespaced under
+   * `addons`; §10's `core.getCatalog(...)` shorthand maps to `core.addons.*`.
+   */
+  readonly addons: AddonEngine;
+  // TODO(Phase 1): metadata resolver, debrid resolver, library surfaces hang
+  // off here too (§5, §10).
 }
 
-export function createCore(deps: CoreDependencies): Core {
+/**
+ * Async because the addon engine loads persisted installed addons from storage
+ * on startup (see createAddonEngine); the returned Core has a ready engine.
+ */
+export async function createCore(deps: CoreDependencies): Promise<Core> {
+  const addons = await createAddonEngine({
+    http: deps.http,
+    storage: deps.storage,
+    onError: deps.onError,
+    timeouts: deps.timeouts,
+  });
   return {
     adapters: {
       storage: deps.storage,
@@ -35,5 +60,6 @@ export function createCore(deps: CoreDependencies): Core {
     },
     providers: deps.providers ?? [],
     createPlayer: deps.playerFactory,
+    addons,
   };
 }

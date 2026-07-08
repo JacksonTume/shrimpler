@@ -30,12 +30,13 @@ Target: **a build you actually use** (browser first).
       isolation, merge/dedup, `onError` hook (2026-07-08)
 - [x] Stream ranking per ADR-0004 (`packages/core/src/ranking/`) —
       reliability signal still stubbed at 0 (2026-07-08)
-- [ ] **Next up:** add-by-URL addon manager UI in the web shell — first
-      consumer of the engine; includes wiring the engine into the `Core`
-      facade / view-model layer (`@shrimpler/shared-ui`), which also settles
-      the state-management contract (spec §13.4)
-- [ ] MetadataResolver (addon-meta-first, ADR-0003) + real `TmdbProvider` —
-      blocked on a decision about TMDB API-key handling
+- [x] Add-by-URL addon manager UI in the web shell — first consumer of the
+      engine; `createCore` now async and exposes `core.addons`; view-model
+      layer settled (`CoreProvider`/`useCore` + `useAddonManager` in
+      `@shrimpler/shared-ui`, plain React state — decision §13.4) (2026-07-08)
+- [ ] **Next up:** MetadataResolver (addon-meta-first, ADR-0003) + real
+      `TmdbProvider` — blocked on a decision about TMDB API-key handling; the
+      TTL cache below is the unblocked prerequisite and can go first
 - [ ] TTL cache module (`core/cache`) backing the metadata resolver
 - [ ] Debrid resolver, one provider end-to-end — blocked on provider choice
       (spec §13.3: Real-Debrid vs AllDebrid vs Premiumize)
@@ -64,14 +65,14 @@ Target: **a build you actually use** (browser first).
 
 ## Open decisions (spec §13)
 
-| #    | Decision                                 | Status                                                             |
-| ---- | ---------------------------------------- | ------------------------------------------------------------------ |
-| 13.1 | Monorepo tooling                         | ✅ pnpm workspaces only; add Turborepo/Nx if build times demand it |
-| 13.2 | First shell                              | ✅ Web (Vite + React); RN-TV in Phase 2                            |
-| 13.3 | Debrid provider for MVP                  | ⏳ open — pick before the debrid resolver work                     |
-| 13.4 | View-model/state contract                | ⏳ open — settle with the addon manager UI                         |
-| 13.5 | Subtitle rendering on web-native players | ⏳ open (Phase 3)                                                  |
-| 13.6 | Telemetry/debug mode                     | ⏳ open — engine `onError` hook exists as the seed                 |
+| #    | Decision                                 | Status                                                                                            |
+| ---- | ---------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| 13.1 | Monorepo tooling                         | ✅ pnpm workspaces only; add Turborepo/Nx if build times demand it                                |
+| 13.2 | First shell                              | ✅ Web (Vite + React); RN-TV in Phase 2                                                           |
+| 13.3 | Debrid provider for MVP                  | ⏳ open — pick before the debrid resolver work                                                    |
+| 13.4 | View-model/state contract                | ✅ plain React state; `CoreProvider`/`useCore` + hooks in shared-ui, no external store (ADR-0011) |
+| 13.5 | Subtitle rendering on web-native players | ⏳ open (Phase 3)                                                                                 |
+| 13.6 | Telemetry/debug mode                     | ⏳ open — engine `onError` hook exists as the seed                                                |
 
 ## Working conventions
 
