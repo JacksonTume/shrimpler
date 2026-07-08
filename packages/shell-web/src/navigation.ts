@@ -2,9 +2,22 @@
 // Shared navigation types for the web shell's lightweight state-based routing
 // (see App.tsx). Kept in its own module so screens and App can both import it
 // without a circular dependency.
+//
+// Routes are a discriminated union so a screen can carry params (the detail
+// screen needs a content id + type). This is still not a router — it grows one
+// when the screen count justifies it.
 
-export type Screen = "home" | "addons";
+import type { ContentId, MediaType } from "@shrimpler/core";
+
+export type Route =
+  | { screen: "home" }
+  | { screen: "addons" }
+  | { screen: "settings" }
+  | { screen: "search" }
+  | { screen: "detail"; id: ContentId; type: MediaType };
+
+export type ScreenName = Route["screen"];
 
 export interface NavigationProps {
-  onNavigate: (screen: Screen) => void;
+  onNavigate: (route: Route) => void;
 }

@@ -11,6 +11,7 @@ import type {
   MetadataProvider,
   StorageAdapter,
 } from "@shrimpler/core";
+import { TMDB_API_KEY_STORAGE_KEY } from "@shrimpler/shared-ui";
 import { Html5VideoPlayerAdapter } from "./players/html5-video";
 
 const STORAGE_PREFIX = "shrimpler:";
@@ -95,26 +96,34 @@ class FetchHttpAdapter implements HttpAdapter {
 }
 
 // TMDB metadata fallback (§5). The key is user-supplied and never committed
-// (neutrality, §14.3): in dev it comes from a git-ignored .env
-// (VITE_TMDB_API_KEY, see .env.example); the settings-screen UI to enter/persist
-// a key lands with the detail screen (its first consumer). Absent key → no
-// provider → the app still runs on addon meta alone.
-function metadataProviders(http: HttpAdapter): MetadataProvider[] {
-  const apiKey = import.meta.env.VITE_TMDB_API_KEY;
+// (neutrality, §14.3). A key entered at runtime via the Settings screen is
+// persisted through the StorageAdapter and takes precedence; in dev a
+// git-ignored .env (VITE_TMDB_API_KEY, see .env.example) is the fallback.
+// Because createCore takes providers at construction, applying a new key means
+// rebuilding the core (see main.tsx reloadCore). Absent key → no provider →
+// the app still runs on addon meta alone.
+async function metadataProviders(
+  http: HttpAdapter,
+  storage: StorageAdapter,
+): Promise<MetadataProvider[]> {
+  const stored = await storage.get<string>(TMDB_API_KEY_STORAGE_KEY);
+  const apiKey = stored ?? import.meta.env.VITE_TMDB_API_KEY;
   return apiKey === undefined || apiKey === ""
     ? []
     : [new TmdbProvider({ http, apiKey })];
 }
 
 // Async because the addon engine loads persisted state at startup (see
-// createCore / createAddonEngine). The shell awaits this before first render.
-export function createWebCore(): Promise<Core> {
+// createCore / createAddonEngine) and the TMDB key is read from storage. The
+// shell awaits this before first render, and again on each reloadCore.
+export async function createWebCore(): Promise<Core> {
   const http = new FetchHttpAdapter();
+  const storage = new WebStorageAdapter();
   return createCore({
-    storage: new WebStorageAdapter(),
+    storage,
     http,
     playerFactory: () => new Html5VideoPlayerAdapter(),
-    providers: metadataProviders(http),
+    providers: await metadataProviders(http, storage),
     // Seed of the §13.6 debug channel: surface skipped/failed addons in dev
     // without committing to a UI. Raw engine messages stay out of the product
     // UI (ADR-0007); this is the developer console only.

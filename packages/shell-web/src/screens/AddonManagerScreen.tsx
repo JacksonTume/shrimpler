@@ -9,6 +9,7 @@ import type { CSSProperties, FormEvent } from "react";
 import { labels, useAddonManager } from "@shrimpler/shared-ui";
 import type { InstalledAddon } from "@shrimpler/core";
 import { FocusContext, setFocus, useBackHandler, useFocusable } from "../focus";
+import { BackButton } from "../components/BackButton";
 import type { NavigationProps } from "../navigation";
 
 const SCREEN_FOCUS_KEY = "ADDONS";
@@ -17,23 +18,6 @@ const INPUT_FOCUS_KEY = "ADDONS_INPUT";
 const focusOutline = (focused: boolean): CSSProperties => ({
   outline: focused ? "2px solid #fff" : "2px solid transparent",
 });
-
-function BackButton({ onBack }: { onBack: () => void }) {
-  const { ref, focused } = useFocusable<object, HTMLButtonElement>({
-    onEnterPress: onBack,
-  });
-  return (
-    <button
-      ref={ref}
-      type="button"
-      data-focused={focused}
-      onClick={onBack}
-      style={focusOutline(focused)}
-    >
-      {labels.back}
-    </button>
-  );
-}
 
 function AddSourceForm({
   isInstalling,
@@ -176,7 +160,7 @@ export function AddonManagerScreen({ onNavigate }: NavigationProps) {
     saveLastFocusedChild: true,
   });
 
-  useBackHandler(() => onNavigate("home"));
+  useBackHandler(() => onNavigate({ screen: "home" }));
 
   useEffect(() => {
     void setFocus(INPUT_FOCUS_KEY);
@@ -186,7 +170,7 @@ export function AddonManagerScreen({ onNavigate }: NavigationProps) {
     <FocusContext.Provider value={focusKey}>
       <main ref={ref} style={{ padding: "1rem" }}>
         <header style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-          <BackButton onBack={() => onNavigate("home")} />
+          <BackButton onBack={() => onNavigate({ screen: "home" })} />
           <h1>{labels.sourcesTitle}</h1>
         </header>
 
