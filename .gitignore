@@ -5,4 +5,7 @@ coverage/
 .vite/
 .eslintcache
 *.local
+.env
+.env.*
+!.env.example
 .DS_Store
