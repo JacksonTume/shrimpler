@@ -23,6 +23,19 @@ export const labels = {
   addPlaylist: "Add a Playlist",
   playlistUrl: "Playlist URL",
 
+  // Addon manager screen. "Addon"/"manifest" is internal vocabulary; the
+  // presentation layer says "Playlist" (§9.2). Error copy is deliberately
+  // generic — the raw engine message goes to the debug channel, not the UI.
+  sourcesTitle: "Playlists",
+  emptySources: "No playlists added",
+  addSourceButton: "Add",
+  installing: "Adding…",
+  addSourceError: "Could not add that playlist. Check the URL and try again.",
+  removeSource: "Remove",
+  enableSource: "Enable",
+  disableSource: "Disable",
+  back: "Back",
+
   // Mirrored in NOTICE, README, and the About screen (§14.3).
   disclaimer:
     "Shrimpler hosts, stores, and distributes no content. You are responsible for the legality of the sources you add.",
