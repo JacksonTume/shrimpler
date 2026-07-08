@@ -10,6 +10,12 @@ export interface HttpAdapter {
 export interface HttpOpts {
   headers?: Record<string, string>;
   timeoutMs?: number;
+  /**
+   * Send a POST body as `application/x-www-form-urlencoded` instead of JSON.
+   * The body is expected to be a `Record<string, string>` (or a pre-encoded
+   * string). Some providers (e.g. debrid REST APIs) require form encoding.
+   */
+  form?: boolean;
 }
 
 export interface HttpResponse {

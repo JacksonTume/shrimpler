@@ -88,6 +88,10 @@ interface TmdbListResponse {
   results?: TmdbListItem[];
 }
 
+interface TmdbExternalIds {
+  imdb_id?: string | null;
+}
+
 function toQuery(params: Record<string, string>): string {
   return Object.entries(params)
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
@@ -259,6 +263,24 @@ export class TmdbProvider implements MetadataProvider {
   async getEpisodesById(id: ContentId): Promise<EpisodeRef[]> {
     const tmdbId = tmdbIdFromContentId(id);
     return tmdbId === null ? [] : this.episodesForTmdbId(tmdbId, `tmdb:${tmdbId}`);
+  }
+
+  /** Map a "tmdb:<id>" (movie or series) id to its IMDb id for stream lookup
+   *  (ADR-0012/0013). For a series this is the *show* IMDb id; the resolver
+   *  re-attaches :S:E, which is the Stremio series stream key (ADR-0002). */
+  async getImdbId(id: ContentId, type: MediaType): Promise<ContentId | null> {
+    const tmdbId = tmdbIdFromContentId(id);
+    if (tmdbId === null) {
+      return null;
+    }
+    const isTv = type === "series" || type === "tv";
+    const external = await this.fetch<TmdbExternalIds>(
+      `/${isTv ? "tv" : "movie"}/${tmdbId}/external_ids`,
+    );
+    const imdbId = external?.imdb_id;
+    return imdbId !== undefined && imdbId !== null && imdbId !== ""
+      ? imdbId
+      : null;
   }
 
   async getFeed(feed: FeedKind, opts?: FeedOpts): Promise<MetaPreview[]> {

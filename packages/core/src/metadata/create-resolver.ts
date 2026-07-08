@@ -199,6 +199,35 @@ export function createMetadataResolver(
       });
     },
 
+    async resolveStreamId(
+      id: ContentId,
+      type: MediaType,
+    ): Promise<ContentId | null> {
+      const { imdbId, namespace, season, episode } = parseId(id);
+      // Already an IMDb id (movie or episode) → streams key on it directly.
+      if (imdbId !== undefined) {
+        return id;
+      }
+      // Provider-native id (e.g. "tmdb:123") → ask the owning provider for the
+      // IMDb id, then re-attach any :S:E episode coordinates.
+      const native = providerForNamespace(namespace);
+      if (native?.getImdbId === undefined) {
+        return null;
+      }
+      try {
+        const resolved = await native.getImdbId(id, type);
+        if (resolved === null) {
+          return null;
+        }
+        return season !== undefined && episode !== undefined
+          ? `${resolved}:${season}:${episode}`
+          : resolved;
+      } catch {
+        // Isolate provider failures (as elsewhere in the resolver).
+        return null;
+      }
+    },
+
     async search(query: string): Promise<MetaPreview[]> {
       // Not cached: results are query-specific and interactive. TMDB-backed in
       // v1; addon catalog `search` extra could merge in later (§6.1).

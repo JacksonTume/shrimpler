@@ -7,6 +7,7 @@ import { AddonManagerScreen } from "./screens/AddonManagerScreen";
 import { DetailScreen } from "./screens/DetailScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 import { SearchScreen } from "./screens/SearchScreen";
+import { PlaybackScreen } from "./screens/PlaybackScreen";
 import type { Route } from "./navigation";
 
 // Dev-only focus spike (§11 Phase 0). Lazy so the chunk is never fetched in
@@ -103,6 +104,12 @@ export function App({ reloadCore }: AppProps) {
         <SearchScreen onNavigate={setRoute} />
       ) : route.screen === "detail" ? (
         <DetailScreen onNavigate={setRoute} id={route.id} type={route.type} />
+      ) : route.screen === "player" ? (
+        <PlaybackScreen
+          onNavigate={setRoute}
+          source={route.source}
+          back={route.back}
+        />
       ) : (
         <HomeScreen onNavigate={setRoute} />
       )}

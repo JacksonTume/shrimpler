@@ -240,6 +240,46 @@ describe("TmdbProvider.getDetailById", () => {
   });
 });
 
+describe("TmdbProvider.getImdbId", () => {
+  it("maps a tmdb: movie id to its IMDb id via /external_ids", async () => {
+    const http = mockHttp({
+      [`https://api.themoviedb.org/3/movie/27205/external_ids?api_key=${KEY}`]: {
+        imdb_id: "tt1375666",
+      },
+    });
+    const provider = new TmdbProvider({ http, apiKey: KEY });
+    expect(await provider.getImdbId("tmdb:27205", "movie")).toBe("tt1375666");
+  });
+
+  it("maps a tmdb: series id to the show IMDb id via /tv/{id}/external_ids", async () => {
+    const http = mockHttp({
+      [`https://api.themoviedb.org/3/tv/1396/external_ids?api_key=${KEY}`]: {
+        imdb_id: "tt0903747",
+      },
+    });
+    const provider = new TmdbProvider({ http, apiKey: KEY });
+    // An episode-coordinate id still resolves to the show id (resolver adds S:E).
+    expect(await provider.getImdbId("tmdb:1396:2:5", "series")).toBe(
+      "tt0903747",
+    );
+  });
+
+  it("returns null when TMDB has no imdb_id", async () => {
+    const http = mockHttp({
+      [`https://api.themoviedb.org/3/movie/5/external_ids?api_key=${KEY}`]: {
+        imdb_id: null,
+      },
+    });
+    const provider = new TmdbProvider({ http, apiKey: KEY });
+    expect(await provider.getImdbId("tmdb:5", "movie")).toBeNull();
+  });
+
+  it("returns null for an id with no numeric tmdb part", async () => {
+    const provider = new TmdbProvider({ http: mockHttp({}), apiKey: KEY });
+    expect(await provider.getImdbId("tmdb:", "movie")).toBeNull();
+  });
+});
+
 describe("TmdbProvider.getEpisodesById", () => {
   it("expands a tmdb: series id into EpisodeRefs keyed tmdb:<id>:S:E", async () => {
     const http = mockHttp({

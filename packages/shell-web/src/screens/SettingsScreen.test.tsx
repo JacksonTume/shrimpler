@@ -81,7 +81,8 @@ describe("SettingsScreen", () => {
       storage: memoryStorage(),
       providers: [{ id: "tmdb" } as unknown as MetadataProvider],
     });
-    expect(screen.getByRole("status").textContent).toContain(
+    // The TMDB status line is the first of the two settings sections.
+    expect(screen.getAllByRole("status")[0]!.textContent).toContain(
       labels.tmdbKeyActive,
     );
   });
@@ -94,10 +95,13 @@ describe("SettingsScreen", () => {
     fireEvent.change(screen.getByLabelText(labels.tmdbKeyLabel), {
       target: { value: "my-key" },
     });
-    fireEvent.click(screen.getByRole("button", { name: labels.save }));
+    // Two sections now share Save/Clear/status; the TMDB one is first.
+    fireEvent.click(screen.getAllByRole("button", { name: labels.save })[0]!);
 
     await waitFor(() =>
-      expect(screen.getByRole("status").textContent).toContain(labels.saved),
+      expect(screen.getAllByRole("status")[0]!.textContent).toContain(
+        labels.saved,
+      ),
     );
     expect(setSpy).toHaveBeenCalledWith(TMDB_API_KEY_STORAGE_KEY, "my-key");
     expect(reloadCore).toHaveBeenCalledTimes(1);
@@ -115,7 +119,7 @@ describe("SettingsScreen", () => {
       ).toBe("old"),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: labels.clear }));
+    fireEvent.click(screen.getAllByRole("button", { name: labels.clear })[0]!);
 
     await waitFor(() => expect(reloadCore).toHaveBeenCalledTimes(1));
     expect(deleteSpy).toHaveBeenCalledWith(TMDB_API_KEY_STORAGE_KEY);

@@ -24,6 +24,7 @@ function createResolver(
     resolveEpisodes: vi.fn(() => Promise.resolve([])),
     buildHomeFeeds: vi.fn(() => Promise.resolve([])),
     search,
+    resolveStreamId: vi.fn(() => Promise.resolve<string | null>(null)),
   };
 }
 

@@ -15,8 +15,17 @@ export type { UseDetailResult } from "./viewmodels/index";
 export { useSearch } from "./viewmodels/index";
 export type { UseSearchResult } from "./viewmodels/index";
 
+export { useStreamPicker } from "./viewmodels/index";
+export type { UseStreamPickerResult } from "./viewmodels/index";
+
 export {
   useTmdbSettings,
   TMDB_API_KEY_STORAGE_KEY,
 } from "./viewmodels/index";
 export type { UseTmdbSettingsResult } from "./viewmodels/index";
+
+export {
+  useDebridSettings,
+  REAL_DEBRID_TOKEN_STORAGE_KEY,
+} from "./viewmodels/index";
+export type { UseDebridSettingsResult } from "./viewmodels/index";

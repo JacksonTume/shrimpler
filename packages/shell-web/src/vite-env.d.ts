@@ -5,6 +5,7 @@
 // never committed — see .env.example and composition-root.ts.
 interface ImportMetaEnv {
   readonly VITE_TMDB_API_KEY?: string;
+  readonly VITE_REALDEBRID_TOKEN?: string;
 }
 
 interface ImportMeta {

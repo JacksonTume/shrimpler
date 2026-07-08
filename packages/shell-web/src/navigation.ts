@@ -7,14 +7,17 @@
 // screen needs a content id + type). This is still not a router — it grows one
 // when the screen count justifies it.
 
-import type { ContentId, MediaType } from "@shrimpler/core";
+import type { ContentId, MediaType, PlayableSource } from "@shrimpler/core";
 
 export type Route =
   | { screen: "home" }
   | { screen: "addons" }
   | { screen: "settings" }
   | { screen: "search" }
-  | { screen: "detail"; id: ContentId; type: MediaType };
+  | { screen: "detail"; id: ContentId; type: MediaType }
+  // Playback carries an already-resolved source (with a playable url) plus the
+  // route to return to on Back (usually the detail it was launched from).
+  | { screen: "player"; source: PlayableSource; back: Route };
 
 export type ScreenName = Route["screen"];
 

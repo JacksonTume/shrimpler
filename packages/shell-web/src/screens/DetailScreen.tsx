@@ -6,20 +6,22 @@
 // episode rows are focusable but inert. Copy routes through the labels module
 // (§9.2 / ADR-0007); focus follows the AddonManagerScreen conventions.
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { labels, useDetail } from "@shrimpler/shared-ui";
-import type { ContentId, EpisodeRef, MediaType } from "@shrimpler/core";
+import type {
+  ContentId,
+  EpisodeRef,
+  MediaType,
+  PlayableSource,
+} from "@shrimpler/core";
 import { FocusContext, setFocus, useBackHandler, useFocusable } from "../focus";
 import { BackButton } from "../components/BackButton";
+import { StreamPickerOverlay } from "../components/StreamPickerOverlay";
 import type { NavigationProps } from "../navigation";
 
 const SCREEN_FOCUS_KEY = "DETAIL";
 const BACK_FOCUS_KEY = "DETAIL_BACK";
-
-// Display-only placeholder: rows are focusable so a remote can scroll them, but
-// activating one does nothing until the stream picker lands.
-const NOOP = (): void => undefined;
 
 const focusOutline = (focused: boolean): CSSProperties => ({
   outline: focused ? "2px solid #fff" : "2px solid transparent",
@@ -64,16 +66,27 @@ function SeasonTab({
   );
 }
 
-function EpisodeRow({ episode }: { episode: EpisodeRef }) {
+function EpisodeRow({
+  episode,
+  onPlay,
+}: {
+  episode: EpisodeRef;
+  onPlay: (id: ContentId) => void;
+}) {
   const { ref, focused } = useFocusable<object, HTMLLIElement>({
-    onEnterPress: NOOP,
+    onEnterPress: () => onPlay(episode.id),
   });
   return (
     <li
       ref={ref}
       data-focused={focused}
       data-episode={episode.id}
-      style={{ ...focusOutline(focused), padding: "0.5rem 0" }}
+      onClick={() => onPlay(episode.id)}
+      style={{
+        ...focusOutline(focused),
+        padding: "0.5rem 0",
+        cursor: "pointer",
+      }}
     >
       <strong>
         {episode.episode}
@@ -84,7 +97,13 @@ function EpisodeRow({ episode }: { episode: EpisodeRef }) {
   );
 }
 
-function EpisodesSection({ episodes }: { episodes: readonly EpisodeRef[] }) {
+function EpisodesSection({
+  episodes,
+  onPlay,
+}: {
+  episodes: readonly EpisodeRef[];
+  onPlay: (id: ContentId) => void;
+}) {
   const seasons = seasonsOf(episodes);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
 
@@ -119,7 +138,7 @@ function EpisodesSection({ episodes }: { episodes: readonly EpisodeRef[] }) {
       )}
       <ul style={{ listStyle: "none", padding: 0 }}>
         {visible.map((episode) => (
-          <EpisodeRow key={episode.id} episode={episode} />
+          <EpisodeRow key={episode.id} episode={episode} onPlay={onPlay} />
         ))}
       </ul>
     </section>
@@ -134,6 +153,33 @@ export function DetailScreen({ onNavigate, id, type }: DetailScreenProps) {
   const { ref, focusKey } = useFocusable<object, HTMLElement>({
     focusKey: SCREEN_FOCUS_KEY,
     saveLastFocusedChild: true,
+  });
+
+  // Which content the stream picker overlay is open for (null = closed). A movie
+  // opens on its own id; a series opens per episode.
+  const [picker, setPicker] = useState<{
+    id: ContentId;
+    type: MediaType;
+  } | null>(null);
+  const openPicker = useCallback(
+    (pickId: ContentId, pickType: MediaType) =>
+      setPicker({ id: pickId, type: pickType }),
+    [],
+  );
+  const closePicker = useCallback(() => setPicker(null), []);
+  const handlePlay = useCallback(
+    (source: PlayableSource) => {
+      onNavigate({
+        screen: "player",
+        source,
+        back: { screen: "detail", id, type },
+      });
+    },
+    [onNavigate, id, type],
+  );
+
+  const playButton = useFocusable<object, HTMLButtonElement>({
+    onEnterPress: () => openPicker(id, "movie"),
   });
 
   const goHome = () => onNavigate({ screen: "home" });
@@ -188,6 +234,17 @@ export function DetailScreen({ onNavigate, id, type }: DetailScreenProps) {
               />
             )}
             {metaLine.length > 0 && <p>{metaLine.join(" · ")}</p>}
+            {type === "movie" && (
+              <button
+                ref={playButton.ref}
+                type="button"
+                data-focused={playButton.focused}
+                onClick={() => openPicker(id, "movie")}
+                style={focusOutline(playButton.focused)}
+              >
+                {labels.play}
+              </button>
+            )}
             {detail.genres !== undefined && detail.genres.length > 0 && (
               <p>
                 {labels.genresTitle}: {detail.genres.join(", ")}
@@ -199,10 +256,23 @@ export function DetailScreen({ onNavigate, id, type }: DetailScreenProps) {
                 {labels.castTitle}: {detail.cast.join(", ")}
               </p>
             )}
-            {episodes.length > 0 && <EpisodesSection episodes={episodes} />}
+            {episodes.length > 0 && (
+              <EpisodesSection
+                episodes={episodes}
+                onPlay={(episodeId) => openPicker(episodeId, "series")}
+              />
+            )}
           </>
         )}
       </main>
+      {picker !== null && (
+        <StreamPickerOverlay
+          id={picker.id}
+          type={picker.type}
+          onClose={closePicker}
+          onPlay={handlePlay}
+        />
+      )}
     </FocusContext.Provider>
   );
 }

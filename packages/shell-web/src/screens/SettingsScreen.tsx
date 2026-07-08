@@ -8,7 +8,7 @@
 
 import { useEffect } from "react";
 import type { CSSProperties, FormEvent } from "react";
-import { labels, useTmdbSettings } from "@shrimpler/shared-ui";
+import { labels, useDebridSettings, useTmdbSettings } from "@shrimpler/shared-ui";
 import { FocusContext, setFocus, useBackHandler, useFocusable } from "../focus";
 import { BackButton } from "../components/BackButton";
 import type { NavigationProps } from "../navigation";
@@ -27,6 +27,7 @@ interface SettingsScreenProps extends NavigationProps {
 export function SettingsScreen({ onNavigate, reloadCore }: SettingsScreenProps) {
   const { apiKey, hasProvider, isSaving, justSaved, setApiKey, save, clear } =
     useTmdbSettings(reloadCore);
+  const debrid = useDebridSettings(reloadCore);
 
   const { ref: inputRef, focused: inputFocused } = useFocusable<
     object,
@@ -43,6 +44,16 @@ export function SettingsScreen({ onNavigate, reloadCore }: SettingsScreenProps) 
   });
   const clearButton = useFocusable<object, HTMLButtonElement>({
     onEnterPress: () => void clear(),
+  });
+
+  const debridInput = useFocusable<object, HTMLInputElement>({
+    onFocus: () => debridInput.ref.current?.focus(),
+  });
+  const debridSaveButton = useFocusable<object, HTMLButtonElement>({
+    onEnterPress: () => void debrid.save(),
+  });
+  const debridClearButton = useFocusable<object, HTMLButtonElement>({
+    onEnterPress: () => void debrid.clear(),
   });
 
   const { ref, focusKey } = useFocusable<object, HTMLElement>({
@@ -111,6 +122,58 @@ export function SettingsScreen({ onNavigate, reloadCore }: SettingsScreenProps) 
         <p role="status">
           {hasProvider ? labels.tmdbKeyActive : labels.tmdbKeyInactive}
           {justSaved ? ` — ${labels.saved}` : ""}
+        </p>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void debrid.save();
+          }}
+          style={{ margin: "1rem 0" }}
+        >
+          <label>
+            {labels.debridTokenLabel}
+            <input
+              ref={debridInput.ref}
+              type="text"
+              value={debrid.token}
+              data-focused={debridInput.focused}
+              disabled={debrid.isSaving}
+              onChange={(e) => debrid.setToken(e.target.value)}
+              style={{ ...focusOutline(debridInput.focused), display: "block" }}
+            />
+          </label>
+          <p>
+            <small>{labels.debridTokenHint}</small>
+          </p>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button
+              ref={debridSaveButton.ref}
+              type="submit"
+              data-focused={debridSaveButton.focused}
+              disabled={debrid.isSaving}
+              style={focusOutline(debridSaveButton.focused)}
+            >
+              {labels.save}
+            </button>
+            <button
+              ref={debridClearButton.ref}
+              type="button"
+              data-focused={debridClearButton.focused}
+              disabled={debrid.isSaving}
+              onClick={() => void debrid.clear()}
+              style={focusOutline(debridClearButton.focused)}
+            >
+              {labels.clear}
+            </button>
+          </div>
+        </form>
+
+        <p role="status">
+          {debrid.hasDebrid
+            ? labels.debridTokenActive
+            : labels.debridTokenInactive}
+          {debrid.justSaved ? ` — ${labels.saved}` : ""}
         </p>
       </main>
     </FocusContext.Provider>

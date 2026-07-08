@@ -3,7 +3,7 @@
 // state + handlers, shared by both shells. Must stay shell-agnostic. The
 // state-management contract (§13.4) is settled: plain React state (useState/
 // useCallback), the Core reached via useCore(), no external store.
-// TODO(Phase 1): useCatalog, useStreamPicker.
+// TODO(Phase 1): useCatalog.
 export { useAddonManager } from "./use-addon-manager";
 export type { UseAddonManagerResult } from "./use-addon-manager";
 
@@ -13,5 +13,14 @@ export type { UseDetailResult } from "./use-detail";
 export { useSearch } from "./use-search";
 export type { UseSearchResult } from "./use-search";
 
+export { useStreamPicker } from "./use-stream-picker";
+export type { UseStreamPickerResult } from "./use-stream-picker";
+
 export { useTmdbSettings, TMDB_API_KEY_STORAGE_KEY } from "./use-tmdb-settings";
 export type { UseTmdbSettingsResult } from "./use-tmdb-settings";
+
+export {
+  useDebridSettings,
+  REAL_DEBRID_TOKEN_STORAGE_KEY,
+} from "./use-debrid-settings";
+export type { UseDebridSettingsResult } from "./use-debrid-settings";
