@@ -52,13 +52,22 @@ export type {
   AddonEngineTimeouts,
 } from "./addon/index";
 export { rankStreams, parseResolution } from "./ranking/index";
+export {
+  parseId,
+  createMetadataResolver,
+  DEFAULT_METADATA_TTLS,
+} from "./metadata/index";
 export type {
   MetadataProvider,
   MetadataResolver,
+  MetadataResolverDeps,
+  MetadataResolverTtls,
   FeedKind,
   FeedOpts,
   CatalogRow,
 } from "./metadata/index";
+export { createTtlCache } from "./cache";
+export type { TtlCache, TtlCacheDeps } from "./cache";
 export type { DebridProvider } from "./debrid/index";
 
 export { TmdbProvider } from "./providers/index";

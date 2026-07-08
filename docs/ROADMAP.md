@@ -34,12 +34,15 @@ Target: **a build you actually use** (browser first).
       engine; `createCore` now async and exposes `core.addons`; view-model
       layer settled (`CoreProvider`/`useCore` + `useAddonManager` in
       `@shrimpler/shared-ui`, plain React state — decision §13.4) (2026-07-08)
-- [ ] **Next up:** MetadataResolver (addon-meta-first, ADR-0003) + real
-      `TmdbProvider` — blocked on a decision about TMDB API-key handling; the
-      TTL cache below is the unblocked prerequisite and can go first
-- [ ] TTL cache module (`core/cache`) backing the metadata resolver
-- [ ] Debrid resolver, one provider end-to-end — blocked on provider choice
-      (spec §13.3: Real-Debrid vs AllDebrid vs Premiumize)
+- [x] TTL cache module (`core/cache`) backing the metadata resolver —
+      provider-agnostic, injected-clock, `getOrCompute` (2026-07-08)
+- [x] MetadataResolver (addon-meta-first, ADR-0003) + real `TmdbProvider` —
+      TMDB API key is user-supplied and stored locally (never committed, §14.3);
+      dev reads a git-ignored `VITE_TMDB_API_KEY`, settings-screen UI deferred to
+      the detail screen. `core.metadata` exposes `resolveDetail`/`resolveEpisodes`;
+      `buildHomeFeeds`/`getFeed` are minimal (home feeds are Phase 3) (2026-07-08)
+- [ ] **Next up:** Debrid resolver, one provider end-to-end — blocked on
+      provider choice (spec §13.3: Real-Debrid vs AllDebrid vs Premiumize)
 - [ ] Real `Html5VideoPlayerAdapter` + stream picker/playback screen
 - [ ] Library: continue-watching driven by player `timeupdate` (spec §10)
 - [ ] Dev tooling: `scripts/addon-smoke.ts` — drives the real engine in

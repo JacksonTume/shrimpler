@@ -6,7 +6,9 @@
 import type { PlayerAdapter } from "./adapters/player";
 import type { StorageAdapter } from "./adapters/storage";
 import type { HttpAdapter } from "./adapters/http";
-import type { MetadataProvider } from "./metadata/resolver";
+import type { MetadataProvider, MetadataResolver } from "./metadata/resolver";
+import { createMetadataResolver } from "./metadata/create-resolver";
+import { createTtlCache } from "./cache";
 import { createAddonEngine } from "./addon/index";
 import type {
   AddonEngine,
@@ -38,8 +40,12 @@ export interface Core {
    * `addons`; §10's `core.getCatalog(...)` shorthand maps to `core.addons.*`.
    */
   readonly addons: AddonEngine;
-  // TODO(Phase 1): metadata resolver, debrid resolver, library surfaces hang
-  // off here too (§5, §10).
+  /**
+   * Metadata resolver (§5, ADR-0003): addon-meta-first with provider (TMDB)
+   * fallback, TTL-cached. Providers are those passed to createCore.
+   */
+  readonly metadata: MetadataResolver;
+  // TODO(Phase 1): debrid resolver, library surfaces hang off here too (§6.4, §10).
 }
 
 /**
@@ -53,13 +59,20 @@ export async function createCore(deps: CoreDependencies): Promise<Core> {
     onError: deps.onError,
     timeouts: deps.timeouts,
   });
+  const providers = deps.providers ?? [];
+  const metadata = createMetadataResolver({
+    addons,
+    providers,
+    cache: createTtlCache({ storage: deps.storage }),
+  });
   return {
     adapters: {
       storage: deps.storage,
       http: deps.http,
     },
-    providers: deps.providers ?? [],
+    providers,
     createPlayer: deps.playerFactory,
     addons,
+    metadata,
   };
 }
