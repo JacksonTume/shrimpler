@@ -84,7 +84,8 @@ function pickFileId(files: RdFile[], fileIdx?: number): number | null {
   }
   const videos = files.filter((f) => isVideoPath(f.path));
   const pool = videos.length > 0 ? videos : files;
-  return pool.reduce((largest, f) => (f.bytes > largest.bytes ? f : largest)).id;
+  return pool.reduce((largest, f) => (f.bytes > largest.bytes ? f : largest))
+    .id;
 }
 
 /** True when RD's instantAvailability entry lists at least one cached file. */
@@ -174,12 +175,16 @@ export class RealDebridProvider implements DebridProvider {
 
     const magnet =
       input.magnet ??
-      (input.infoHash !== undefined ? magnetFromHash(input.infoHash) : undefined);
+      (input.infoHash !== undefined
+        ? magnetFromHash(input.infoHash)
+        : undefined);
     if (magnet === undefined) {
       return null;
     }
 
-    const added = await this.post<RdAddMagnet>("/torrents/addMagnet", { magnet });
+    const added = await this.post<RdAddMagnet>("/torrents/addMagnet", {
+      magnet,
+    });
     if (added === null) {
       return null;
     }
@@ -201,7 +206,11 @@ export class RealDebridProvider implements DebridProvider {
     // an uncached one would download server-side, which v1 does not wait on.
     info = await this.get<RdTorrentInfo>(`/torrents/info/${torrentId}`);
     let polls = 0;
-    while (info !== null && info.status !== "downloaded" && polls < this.maxPolls) {
+    while (
+      info !== null &&
+      info.status !== "downloaded" &&
+      polls < this.maxPolls
+    ) {
       await this.wait(this.pollIntervalMs);
       info = await this.get<RdTorrentInfo>(`/torrents/info/${torrentId}`);
       polls += 1;

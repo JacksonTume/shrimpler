@@ -97,36 +97,42 @@ export function createMetadataResolver(
 
   return {
     resolveDetail(id: ContentId, type: MediaType): Promise<MetaDetail | null> {
-      return cache.getOrCompute(`meta/${type}/${id}`, ttls.detailMs, async () => {
-        const addonMeta = await addons.getMeta(id, type);
-        if (addonMeta !== null && !isSparse(addonMeta)) {
-          return addonMeta; // addon is the source of truth (§5.1)
-        }
-        const { imdbId, namespace } = parseId(id);
-
-        // Provider-native id (e.g. "tmdb:123", from title search) → ask the
-        // owning provider directly; no IMDb pivot needed.
-        const native = providerForNamespace(namespace);
-        if (native?.getDetailById !== undefined) {
-          try {
-            const detail = await native.getDetailById(id, type);
-            if (detail !== null) {
-              return addonMeta === null ? detail : fillGaps(detail, addonMeta);
-            }
-          } catch {
-            // Isolate provider failures (as with the imdb path below).
+      return cache.getOrCompute(
+        `meta/${type}/${id}`,
+        ttls.detailMs,
+        async () => {
+          const addonMeta = await addons.getMeta(id, type);
+          if (addonMeta !== null && !isSparse(addonMeta)) {
+            return addonMeta; // addon is the source of truth (§5.1)
           }
-        }
+          const { imdbId, namespace } = parseId(id);
 
-        if (imdbId === undefined) {
-          return addonMeta; // no pivot → provider fallback can't apply
-        }
-        const provider = await providerDetail(imdbId, type);
-        if (provider === null) {
-          return addonMeta;
-        }
-        return addonMeta === null ? provider : fillGaps(provider, addonMeta);
-      });
+          // Provider-native id (e.g. "tmdb:123", from title search) → ask the
+          // owning provider directly; no IMDb pivot needed.
+          const native = providerForNamespace(namespace);
+          if (native?.getDetailById !== undefined) {
+            try {
+              const detail = await native.getDetailById(id, type);
+              if (detail !== null) {
+                return addonMeta === null
+                  ? detail
+                  : fillGaps(detail, addonMeta);
+              }
+            } catch {
+              // Isolate provider failures (as with the imdb path below).
+            }
+          }
+
+          if (imdbId === undefined) {
+            return addonMeta; // no pivot → provider fallback can't apply
+          }
+          const provider = await providerDetail(imdbId, type);
+          if (provider === null) {
+            return addonMeta;
+          }
+          return addonMeta === null ? provider : fillGaps(provider, addonMeta);
+        },
+      );
     },
 
     resolveEpisodes(id: ContentId): Promise<EpisodeRef[]> {

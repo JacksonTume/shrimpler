@@ -59,7 +59,10 @@ function SeasonTab({
       data-focused={focused}
       aria-pressed={active}
       onClick={() => onSelect(season)}
-      style={{ ...focusOutline(focused), fontWeight: active ? "bold" : "normal" }}
+      style={{
+        ...focusOutline(focused),
+        fontWeight: active ? "bold" : "normal",
+      }}
     >
       {labels.seasonLabel} {season}
     </button>
@@ -168,14 +171,20 @@ export function DetailScreen({ onNavigate, id, type }: DetailScreenProps) {
   );
   const closePicker = useCallback(() => setPicker(null), []);
   const handlePlay = useCallback(
-    (source: PlayableSource) => {
+    (source: PlayableSource, contentId: ContentId, contentType: MediaType) => {
       onNavigate({
         screen: "player",
         source,
+        contentId,
+        type: contentType,
+        // Display snapshot for the continue-watching row (the show name/poster
+        // for a series episode too).
+        title: detail?.name,
+        poster: detail?.poster,
         back: { screen: "detail", id, type },
       });
     },
-    [onNavigate, id, type],
+    [onNavigate, id, type, detail?.name, detail?.poster],
   );
 
   const playButton = useFocusable<object, HTMLButtonElement>({
@@ -195,7 +204,9 @@ export function DetailScreen({ onNavigate, id, type }: DetailScreenProps) {
       : [
           detail.released ?? detail.releaseInfo,
           detail.runtime,
-          detail.imdbRating !== undefined ? `★ ${detail.imdbRating}` : undefined,
+          detail.imdbRating !== undefined
+            ? `★ ${detail.imdbRating}`
+            : undefined,
         ].filter((part): part is string => part !== undefined && part !== "");
 
   return (

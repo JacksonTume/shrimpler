@@ -54,6 +54,13 @@ export type {
 export { rankStreams, parseResolution } from "./ranking/index";
 export { createStreamService } from "./streams/index";
 export type { StreamService, StreamServiceDeps } from "./streams/index";
+export { createLibrary } from "./library/index";
+export type {
+  Library,
+  LibraryDeps,
+  ProgressEntry,
+  ProgressInput,
+} from "./library/index";
 export {
   parseId,
   createMetadataResolver,

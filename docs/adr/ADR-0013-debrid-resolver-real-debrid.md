@@ -49,7 +49,7 @@ Adopt **Real-Debrid** as the v1 debrid provider.
   `resolveStreamId`, which passes a `tt…` id through unchanged and routes a
   namespaced `tmdb:<id>` to the owning provider's `getImdbId` (TMDB
   `/{movie,tv}/{id}/external_ids`), re-attaching any `:S:E` episode coordinates —
-  which is the Stremio series stream key (a series resolves to the *show* IMDb
+  which is the Stremio series stream key (a series resolves to the _show_ IMDb
   id, not the episode's own). A new `StreamService` (`core/src/streams/`)
   composes `resolveStreamId` → `AddonEngine.getStreams` → `checkCached` annotate →
   `rankStreams`, plus `resolveStream` (direct-url passthrough, else debrid).
@@ -76,6 +76,6 @@ Adopt **Real-Debrid** as the v1 debrid provider.
   stream-id resolution for free.
 - Deferred (noted here and as code TODOs): continue-watching / library
   persistence and the `addon-smoke.ts` dev tool (the rest of Phase 1); subtitle
-  *rendering* (§13.5 — tracks are enumerated, not styled); hls.js and live
+  _rendering_ (§13.5 — tracks are enumerated, not styled); hls.js and live
   reconnect (Phase 2); header-required sources in `<video>`; long-running uncached
   debrid downloads; non-web-codec native fallback (Tizen/webOS, Phase 3).

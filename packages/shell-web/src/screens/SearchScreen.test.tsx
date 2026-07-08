@@ -21,9 +21,7 @@ import {
 } from "../focus";
 import { SearchScreen } from "./SearchScreen";
 
-function createResolver(
-  search: MetadataResolver["search"],
-): MetadataResolver {
+function createResolver(search: MetadataResolver["search"]): MetadataResolver {
   return {
     resolveDetail: vi.fn(() => Promise.resolve(null)),
     resolveEpisodes: vi.fn(() => Promise.resolve([])),
@@ -95,7 +93,10 @@ describe("SearchScreen", () => {
 
   it("navigates to detail when a result is selected", async () => {
     const onNavigate = vi.fn();
-    renderSearch(createResolver(() => Promise.resolve([OBSESSION])), onNavigate);
+    renderSearch(
+      createResolver(() => Promise.resolve([OBSESSION])),
+      onNavigate,
+    );
 
     fireEvent.change(screen.getByLabelText(labels.searchPlaceholder), {
       target: { value: "obs" },

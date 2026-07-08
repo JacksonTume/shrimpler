@@ -16,6 +16,11 @@ export const labels = {
   emptyHome: "No sources added",
   emptyHomeHint: "Add a playlist to get started.",
 
+  // Continue-watching row on the home screen (§10 step 8, ADR-0014). Populated
+  // from local watch progress; empty until the user has played something.
+  continueWatching: "Continue watching",
+  removeFromContinue: "Remove",
+
   // Core-vocabulary → user-facing renames (§9.2 table).
   source: "Source",
   sources: "Sources",
@@ -50,7 +55,8 @@ export const labels = {
   detailLoading: "Loading…",
   detailError: "Could not load details. Please try again.",
   detailEmpty: "No details found.",
-  detailNoProviderHint: "Add a TMDB key in Settings for posters and descriptions.",
+  detailNoProviderHint:
+    "Add a TMDB key in Settings for posters and descriptions.",
   castTitle: "Cast",
   genresTitle: "Genres",
   episodesTitle: "Episodes",

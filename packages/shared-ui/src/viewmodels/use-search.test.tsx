@@ -16,9 +16,7 @@ function preview(id: string, name: string): MetaPreview {
   return { id, type: "movie", name };
 }
 
-function createResolver(
-  search: MetadataResolver["search"],
-): MetadataResolver {
+function createResolver(search: MetadataResolver["search"]): MetadataResolver {
   return {
     resolveDetail: vi.fn(() => Promise.resolve(null)),
     resolveEpisodes: vi.fn(() => Promise.resolve([])),

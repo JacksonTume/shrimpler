@@ -57,7 +57,9 @@ const noWait = (): Promise<void> => Promise.resolve();
 describe("RealDebridProvider.resolve", () => {
   it("unrestricts a direct hoster url without touching the torrents API", async () => {
     const http = mockHttp({
-      [`${BASE}/unrestrict/link`]: { download: "https://dl.real-debrid.com/f.mp4" },
+      [`${BASE}/unrestrict/link`]: {
+        download: "https://dl.real-debrid.com/f.mp4",
+      },
     });
     const rd = new RealDebridProvider({ http, token: TOKEN });
 
@@ -92,7 +94,9 @@ describe("RealDebridProvider.resolve", () => {
         { id: "T1", status: "downloaded", links: ["https://rd/link/3"] },
       ],
       [`${BASE}/torrents/selectFiles/T1`]: "",
-      [`${BASE}/unrestrict/link`]: { download: "https://dl.real-debrid.com/movie.mkv" },
+      [`${BASE}/unrestrict/link`]: {
+        download: "https://dl.real-debrid.com/movie.mkv",
+      },
     });
     const rd = new RealDebridProvider({ http, token: TOKEN, wait: noWait });
 
@@ -106,10 +110,14 @@ describe("RealDebridProvider.resolve", () => {
     const add = http.calls.find((c) => c.url.endsWith("/torrents/addMagnet"));
     expect(add?.body).toEqual({ magnet: "magnet:?xt=urn:btih:ABCDEF" });
     // Largest video file (id 3) selected.
-    const select = http.calls.find((c) => c.url.endsWith("/torrents/selectFiles/T1"));
+    const select = http.calls.find((c) =>
+      c.url.endsWith("/torrents/selectFiles/T1"),
+    );
     expect(select?.body).toEqual({ files: "3" });
     // The torrent's link is unrestricted, not the magnet.
-    const unrestrict = http.calls.find((c) => c.url.endsWith("/unrestrict/link"));
+    const unrestrict = http.calls.find((c) =>
+      c.url.endsWith("/unrestrict/link"),
+    );
     expect(unrestrict?.body).toEqual({ link: "https://rd/link/3" });
   });
 
@@ -135,7 +143,9 @@ describe("RealDebridProvider.resolve", () => {
     await rd.resolve({ magnet: "magnet:?xt=urn:btih:X", fileIdx: 0 });
 
     // fileIdx 0 → files[0].id === 10, not the largest (id 20).
-    const select = http.calls.find((c) => c.url.endsWith("/torrents/selectFiles/T2"));
+    const select = http.calls.find((c) =>
+      c.url.endsWith("/torrents/selectFiles/T2"),
+    );
     expect(select?.body).toEqual({ files: "10" });
   });
 

@@ -66,7 +66,9 @@ interface StreamPickerOverlayProps {
   id: ContentId;
   type: MediaType;
   onClose: () => void;
-  onPlay: (source: PlayableSource) => void;
+  /** The resolved source plus the content identity it was picked for (the
+   *  playback screen needs the id/type for continue-watching progress). */
+  onPlay: (source: PlayableSource, id: ContentId, type: MediaType) => void;
 }
 
 export function StreamPickerOverlay({
@@ -75,14 +77,8 @@ export function StreamPickerOverlay({
   onClose,
   onPlay,
 }: StreamPickerOverlayProps) {
-  const {
-    streams,
-    isLoading,
-    error,
-    isResolving,
-    resolveError,
-    select,
-  } = useStreamPicker(id, type);
+  const { streams, isLoading, error, isResolving, resolveError, select } =
+    useStreamPicker(id, type);
 
   const { ref, focusKey } = useFocusable<object, HTMLDivElement>({
     focusKey: OVERLAY_FOCUS_KEY,
@@ -104,10 +100,10 @@ export function StreamPickerOverlay({
     async (source: PlayableSource): Promise<void> => {
       const resolved = await select(source);
       if (resolved !== null) {
-        onPlay(resolved);
+        onPlay(resolved, id, type);
       }
     },
-    [select, onPlay],
+    [select, onPlay, id, type],
   );
 
   return (

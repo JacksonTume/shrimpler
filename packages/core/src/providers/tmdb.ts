@@ -163,7 +163,9 @@ export class TmdbProvider implements MetadataProvider {
       genres: detail.genres?.map((g) => g.name),
       cast: detail.credits?.cast?.slice(0, 20).map((c) => c.name),
       runtime:
-        runtime === undefined || runtime === null ? undefined : `${runtime} min`,
+        runtime === undefined || runtime === null
+          ? undefined
+          : `${runtime} min`,
       released: detail.release_date ?? detail.first_air_date,
       // TMDB's own rating, surfaced via the presentation-only imdbRating field.
       imdbRating:
@@ -216,10 +218,7 @@ export class TmdbProvider implements MetadataProvider {
     return episodes;
   }
 
-  async getDetail(
-    imdbId: string,
-    type: MediaType,
-  ): Promise<MetaDetail | null> {
+  async getDetail(imdbId: string, type: MediaType): Promise<MetaDetail | null> {
     const isTv = type === "series" || type === "tv";
     const tmdbId = await this.findTmdbId(imdbId, isTv);
     if (tmdbId === null) {
@@ -244,9 +243,7 @@ export class TmdbProvider implements MetadataProvider {
       page: "1",
     });
     return (response?.results ?? [])
-      .filter(
-        (item) => item.media_type === "movie" || item.media_type === "tv",
-      )
+      .filter((item) => item.media_type === "movie" || item.media_type === "tv")
       .map((item) => this.toPreview(item));
   }
 
@@ -262,7 +259,9 @@ export class TmdbProvider implements MetadataProvider {
   /** Episodes for a "tmdb:<id>" series content id. */
   async getEpisodesById(id: ContentId): Promise<EpisodeRef[]> {
     const tmdbId = tmdbIdFromContentId(id);
-    return tmdbId === null ? [] : this.episodesForTmdbId(tmdbId, `tmdb:${tmdbId}`);
+    return tmdbId === null
+      ? []
+      : this.episodesForTmdbId(tmdbId, `tmdb:${tmdbId}`);
   }
 
   /** Map a "tmdb:<id>" (movie or series) id to its IMDb id for stream lookup
@@ -301,8 +300,7 @@ export class TmdbProvider implements MetadataProvider {
   }
 
   private toPreview(item: TmdbListItem): MetaPreview {
-    const isTv =
-      item.media_type === "tv" || item.first_air_date !== undefined;
+    const isTv = item.media_type === "tv" || item.first_air_date !== undefined;
     const date = item.release_date ?? item.first_air_date;
     const year =
       date !== undefined && date.length >= 4 ? date.slice(0, 4) : undefined;

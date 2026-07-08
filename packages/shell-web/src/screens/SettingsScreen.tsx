@@ -8,7 +8,11 @@
 
 import { useEffect } from "react";
 import type { CSSProperties, FormEvent } from "react";
-import { labels, useDebridSettings, useTmdbSettings } from "@shrimpler/shared-ui";
+import {
+  labels,
+  useDebridSettings,
+  useTmdbSettings,
+} from "@shrimpler/shared-ui";
 import { FocusContext, setFocus, useBackHandler, useFocusable } from "../focus";
 import { BackButton } from "../components/BackButton";
 import type { NavigationProps } from "../navigation";
@@ -24,7 +28,10 @@ interface SettingsScreenProps extends NavigationProps {
   reloadCore: () => Promise<void>;
 }
 
-export function SettingsScreen({ onNavigate, reloadCore }: SettingsScreenProps) {
+export function SettingsScreen({
+  onNavigate,
+  reloadCore,
+}: SettingsScreenProps) {
   const { apiKey, hasProvider, isSaving, justSaved, setApiKey, save, clear } =
     useTmdbSettings(reloadCore);
   const debrid = useDebridSettings(reloadCore);

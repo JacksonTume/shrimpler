@@ -6,7 +6,7 @@ honest — this file is the entry point for anyone (human or agent) picking up
 work. Architectural decisions live in [adr/](adr/README.md); do not re-litigate
 them here.
 
-_Last updated: 2026-07-08_
+_Last updated: 2026-07-09_
 
 ## Phase 0 — Foundations ✅ complete
 
@@ -21,9 +21,11 @@ _Last updated: 2026-07-08_
 - [x] Governance bootstrap: LICENSE/NOTICE/README/CONTRIBUTING, templates,
       CI, ADRs 0001–0009 (2026-07-07)
 
-## Phase 1 — Core + debrid VOD MVP 🔨 in progress
+## Phase 1 — Core + debrid VOD MVP ✅ complete
 
-Target: **a build you actually use** (browser first).
+Target: **a build you actually use** (browser first). Reached: search → detail →
+pick a source → Real-Debrid resolve → play, with continue-watching. Next up is
+Phase 2 (second shell + IPTV).
 
 - [x] Addon engine (`packages/core/src/addon/`): manifest install/validate,
       persistence, fan-out with per-addon timeouts + partial-failure
@@ -77,10 +79,17 @@ Target: **a build you actually use** (browser first).
       (`MetadataProvider.getImdbId` + `MetadataResolver.resolveStreamId`,
       ADR-0013). Runtime Real-Debrid token settings UI (`useDebridSettings`)
       (2026-07-08)
-- [ ] **Next up:** Library: continue-watching driven by player `timeupdate` (spec §10)
-- [ ] Dev tooling: `scripts/addon-smoke.ts` — drives the real engine in
-      plain Node against a manifest URL passed as an argument (must ship
-      empty: no bundled/example source URLs, §14.3)
+- [x] Library: continue-watching driven by player `timeupdate` (§10 step 8,
+      ADR-0014). Core `library` module (`createLibrary`, `core.library`) persists
+      progress via the `StorageAdapter`, keyed by detail id (a series folds to one
+      entry at its latest episode); ≥95% evicts, <15s is ignored. `useWatchProgress`
+      (throttled record + flush) drives it from `PlaybackScreen`, which also
+      resumes at the saved position; `useContinueWatching` renders a home-screen
+      row that opens detail (2026-07-09)
+- [x] Dev tooling: `scripts/addon-smoke.ts` — drives the real engine in
+      plain Node (via `tsx`, `pnpm smoke <manifest-url>`) against a manifest URL
+      passed as an argument; in-memory storage + Node fetch. Ships empty: no
+      bundled/example source URLs (§14.3) (2026-07-09)
 
 ## Phase 2 — Second shell + IPTV
 

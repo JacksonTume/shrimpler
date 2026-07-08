@@ -18,10 +18,16 @@ export type { UseSearchResult } from "./viewmodels/index";
 export { useStreamPicker } from "./viewmodels/index";
 export type { UseStreamPickerResult } from "./viewmodels/index";
 
-export {
-  useTmdbSettings,
-  TMDB_API_KEY_STORAGE_KEY,
+export { useWatchProgress } from "./viewmodels/index";
+export type {
+  UseWatchProgressResult,
+  WatchProgressTarget,
 } from "./viewmodels/index";
+
+export { useContinueWatching } from "./viewmodels/index";
+export type { UseContinueWatchingResult } from "./viewmodels/index";
+
+export { useTmdbSettings, TMDB_API_KEY_STORAGE_KEY } from "./viewmodels/index";
 export type { UseTmdbSettingsResult } from "./viewmodels/index";
 
 export {

@@ -297,9 +297,7 @@ describe("resolveStreamId (tmdb→imdb hop, ADR-0013)", () => {
 
 describe("buildHomeFeeds", () => {
   it("composes rows from the first feed-capable provider", async () => {
-    const items: MetaPreview[] = [
-      { id: "tmdb:1", type: "movie", name: "One" },
-    ];
+    const items: MetaPreview[] = [{ id: "tmdb:1", type: "movie", name: "One" }];
     const { resolver } = resolverWith({
       provider: { getFeed: () => Promise.resolve(items) },
     });

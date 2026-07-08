@@ -48,6 +48,22 @@ pnpm verify     # lint + boundary check + typecheck + tests + build
 Individual checks: `pnpm lint`, `pnpm depcruise`, `pnpm typecheck`,
 `pnpm test`, `pnpm build`.
 
+Drive the **real addon engine** from the terminal (no UI) against a manifest
+URL you supply — installs it, then lists a catalog and resolves meta + ranked
+streams for the first few items:
+
+```sh
+pnpm smoke <manifest-url> [type] [catalogId]
+```
+
+The full in-app flow (search → detail → play) needs two user-supplied,
+never-committed credentials: a **TMDB API key** for metadata and a
+**Real-Debrid token** to resolve torrent sources to a playable link. Enter them
+on the Settings screen, or in dev via a git-ignored `.env` (see
+[`packages/shell-web/.env.example`](packages/shell-web/.env.example)). Both are
+optional — without them the app still runs on addon-supplied metadata and
+direct-URL streams.
+
 In the dev server, the **"Show focus spike"** button (top-right, dev builds
 only) opens the spatial-navigation test screen — drive it with arrow keys,
 Enter, and Escape/Backspace (see ADR-0010).
@@ -70,13 +86,17 @@ Everything runs offline — no suite touches the network:
   `StorageAdapter` and a route-table `HttpAdapter`: install/persistence,
   fan-out, per-addon timeouts, partial-failure isolation, merge/dedup, and
   stream ranking.
-- **shell-web** tests run in jsdom. The focus spike drives the real
-  spatial-navigation engine with window key events over synthetic element
-  geometry; the back-key stack has plain unit tests.
+- **shell-web** tests run in jsdom: per-screen render tests (home, addon
+  manager, search, detail, settings), the `<video>` player adapter, and the
+  focus spike / back-key stack. View-models are unit-tested against a fake core
+  in the shared-ui suite.
 
-Manual testing: the dev server covers the home screen and the focus spike.
-There is no UI that exercises the addon engine yet — that arrives with the
-add-by-URL addon manager (see the roadmap).
+Manual testing: the dev server runs the full Phase 1 flow — add a source by URL,
+search a title, open its detail, pick a source, and play (Real-Debrid resolves
+torrents to a direct link); watch progress persists to a "Continue watching"
+row on the home screen and resumes on replay. Metadata and playback need the
+credentials noted under [Development](#development). Use `pnpm smoke` to exercise
+the engine against a manifest without the UI.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR — note especially
 the project-scope rules (no bundled sources of any kind).

@@ -15,9 +15,18 @@ export type Route =
   | { screen: "settings" }
   | { screen: "search" }
   | { screen: "detail"; id: ContentId; type: MediaType }
-  // Playback carries an already-resolved source (with a playable url) plus the
-  // route to return to on Back (usually the detail it was launched from).
-  | { screen: "player"; source: PlayableSource; back: Route };
+  // Playback carries an already-resolved source (with a playable url), the
+  // content identity it belongs to (for continue-watching progress + resume),
+  // an optional display snapshot, and the route to return to on Back.
+  | {
+      screen: "player";
+      source: PlayableSource;
+      contentId: ContentId;
+      type: MediaType;
+      title?: string;
+      poster?: string;
+      back: Route;
+    };
 
 export type ScreenName = Route["screen"];
 

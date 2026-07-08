@@ -93,9 +93,7 @@ describe("DetailScreen", () => {
 
     await waitFor(() => expect(screen.getByText("A Film")).toBeDefined());
     expect(screen.getByText("A quiet film.")).toBeDefined();
-    expect(
-      screen.getByText(`${labels.castTitle}: Alice, Bob`),
-    ).toBeDefined();
+    expect(screen.getByText(`${labels.castTitle}: Alice, Bob`)).toBeDefined();
     expect(resolver.resolveEpisodes).not.toHaveBeenCalled();
   });
 
@@ -106,7 +104,11 @@ describe("DetailScreen", () => {
     ];
     const resolver = createResolver({
       resolveDetail: vi.fn(() =>
-        Promise.resolve<MetaDetail>({ id: "tt9", type: "series", name: "A Show" }),
+        Promise.resolve<MetaDetail>({
+          id: "tt9",
+          type: "series",
+          name: "A Show",
+        }),
       ),
       resolveEpisodes: vi.fn(() => Promise.resolve(episodes)),
     });
@@ -130,7 +132,9 @@ describe("DetailScreen", () => {
     });
     renderDetail({ resolver });
 
-    await waitFor(() => expect(screen.getByText(labels.detailEmpty)).toBeDefined());
+    await waitFor(() =>
+      expect(screen.getByText(labels.detailEmpty)).toBeDefined(),
+    );
     expect(screen.getByText(labels.detailNoProviderHint)).toBeDefined();
   });
 });
