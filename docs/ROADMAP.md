@@ -93,11 +93,31 @@ Phase 2 (second shell + IPTV).
 
 ## Phase 2 — Second shell + IPTV
 
-- [ ] `packages/shell-rn` (react-native-tvos) + native D-pad focus spike
-- [ ] IPTV internal addon (ADR-0006): M3U/M3U8 parser + Xtream Codes client
+Built iteratively, one shippable increment at a time. **TV is shelved** to
+Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
+**mobile** (Expo dev client, Android first). See the increment plan for details.
+
+- [x] IPTV internal addon (ADR-0006), increment 1 — M3U/M3U8 parser
+      (`core/src/iptv`), the `InternalAddon` engine seam, `core.iptv` playlist
+      config, the `resolveStreamId` pass-through fix, and a web browse surface
+      (Live TV channels + playlist management). **Live HLS playback deferred.**
+- [x] hls.js live playback for web (increment 2) — hls.js dynamically imported
+      behind `Html5VideoPlayerAdapter` (own lazy chunk), `reconnecting` on
+      recoverable errors, and a `kind:'live'` guard so channels skip
+      continue-watching. Makes web IPTV live actually play.
+- [x] IPTV VOD (increment 3) — the internal addon emits `movie`/`series` types
+      under the `iptv:<kind>:<id>` scheme, fed by **both** M3U classification
+      (`classify-m3u.ts`) and an Xtream Codes client (`xtream.ts`,
+      `player_api.php`, lazy series episodes), with a generic web catalog screen
+      (Live TV / Movies / Series) + an Xtream account form
+- [ ] `packages/shell-rn` — Expo (dev client), Android-first: `StorageAdapter`
+      (AsyncStorage/MMKV), `HttpAdapter` (fetch), `PlayerAdapter`
+      (`react-native-video` — plays HLS natively + honors headers), composition
+      root, screens reusing every `shared-ui` hook. Reaches VOD + IPTV parity
+      on mobile
 - [ ] EPG pipeline (streaming XMLTV parse, tvg-id matching) + guide UI
-- [ ] Live playback hardening (TS/HLS reconnect — `PlayerAdapter` live mode)
-- [ ] IndexedDB `StorageAdapter` for web (EPG/cache scale, spec §7.2)
+- [ ] IndexedDB `StorageAdapter` for web (EPG/cache scale, spec §7.2; also
+      caches parsed channels to drop the re-parse-on-reload cost)
 
 ## Phase 3 — Breadth & polish
 

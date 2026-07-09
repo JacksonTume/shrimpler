@@ -14,6 +14,8 @@ import { createStreamService } from "./streams/index";
 import type { StreamService } from "./streams/index";
 import { createLibrary } from "./library/index";
 import type { Library } from "./library/index";
+import { buildIptvAddon, createIptvService } from "./iptv/index";
+import type { IptvService } from "./iptv/index";
 import { createAddonEngine } from "./addon/index";
 import type {
   AddonEngine,
@@ -69,6 +71,12 @@ export interface Core {
    * here later.
    */
   readonly library: Library;
+  /**
+   * IPTV playlist config (§8, ADR-0006): manage user-supplied M3U playlists.
+   * The channels themselves are served as an internal addon through
+   * `core.addons`; applying a playlist change means rebuilding the core.
+   */
+  readonly iptv: IptvService;
 }
 
 /**
@@ -76,11 +84,19 @@ export interface Core {
  * on startup (see createAddonEngine); the returned Core has a ready engine.
  */
 export async function createCore(deps: CoreDependencies): Promise<Core> {
+  // Build the internal IPTV addon from persisted playlists (undefined when none)
+  // and inject it alongside HTTP addons (ADR-0006).
+  const iptvAddon = await buildIptvAddon({
+    http: deps.http,
+    storage: deps.storage,
+    onError: deps.onError,
+  });
   const addons = await createAddonEngine({
     http: deps.http,
     storage: deps.storage,
     onError: deps.onError,
     timeouts: deps.timeouts,
+    internalAddons: iptvAddon ? [iptvAddon] : [],
   });
   const providers = deps.providers ?? [];
   const metadata = createMetadataResolver({
@@ -94,6 +110,7 @@ export async function createCore(deps: CoreDependencies): Promise<Core> {
     debrid: deps.debrid,
   });
   const library = createLibrary({ storage: deps.storage });
+  const iptv = createIptvService({ storage: deps.storage });
   return {
     adapters: {
       storage: deps.storage,
@@ -106,5 +123,6 @@ export async function createCore(deps: CoreDependencies): Promise<Core> {
     debrid: deps.debrid,
     streams,
     library,
+    iptv,
   };
 }

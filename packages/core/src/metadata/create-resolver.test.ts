@@ -287,10 +287,12 @@ describe("resolveStreamId (tmdb→imdb hop, ADR-0013)", () => {
     expect(await resolver.resolveStreamId("tmdb:5", "movie")).toBeNull();
   });
 
-  it("returns null for a namespaced id no provider owns", async () => {
+  it("passes a namespaced id no provider owns through unchanged (ADR-0006)", async () => {
     const getImdbId = vi.fn(() => Promise.resolve("tt1"));
     const { resolver } = resolverWith({ provider: { getImdbId } });
-    expect(await resolver.resolveStreamId("kitsu:5", "series")).toBeNull();
+    // The owning addon serves streams for its own ids, so don't drop them.
+    expect(await resolver.resolveStreamId("kitsu:5", "series")).toBe("kitsu:5");
+    expect(await resolver.resolveStreamId("iptv:abc", "tv")).toBe("iptv:abc");
     expect(getImdbId).not.toHaveBeenCalled();
   });
 });

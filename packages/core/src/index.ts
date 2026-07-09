@@ -37,7 +37,7 @@ export type {
   HttpResponse,
 } from "./adapters/index";
 
-export type { AddonEngine } from "./addon/index";
+export type { AddonEngine, InternalAddon } from "./addon/index";
 export {
   createAddonEngine,
   DEFAULT_ADDON_TIMEOUTS,
@@ -61,6 +61,29 @@ export type {
   ProgressEntry,
   ProgressInput,
 } from "./library/index";
+export {
+  parseM3U,
+  classifyM3U,
+  createIptvAddon,
+  buildIptvAddon,
+  createIptvService,
+  fetchXtreamContent,
+  emptyIptvContent,
+  mergeIptvContent,
+  IPTV_PLAYLISTS_STORAGE_KEY,
+  IPTV_XTREAM_STORAGE_KEY,
+} from "./iptv/index";
+export type {
+  Channel,
+  IptvAddonOptions,
+  IptvService,
+  IptvPlaylist,
+  IptvContent,
+  IptvMovie,
+  IptvSeries,
+  IptvEpisode,
+  XtreamAccount,
+} from "./iptv/index";
 export {
   parseId,
   createMetadataResolver,

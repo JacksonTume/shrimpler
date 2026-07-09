@@ -14,8 +14,10 @@ import type {
 import type { ContentId, MediaType } from "../types/ids";
 import type { MetaDetail, MetaPreview } from "../types/meta";
 import type { PlayableSource, SubtitleTrack } from "../types/sources";
+import type { AddonManifest } from "../types/addon";
 import { rankStreams } from "../ranking/stream-rank";
 import type { AddonEngine } from "./engine";
+import type { InternalAddon } from "./internal-addon";
 import {
   AddonInstallError,
   normalizeManifestUrl,
@@ -63,6 +65,12 @@ export interface AddonEngineDeps {
   timeouts?: Partial<AddonEngineTimeouts>;
   /** Observability hook for skipped/failed addons (seed of the §13.6 debug mode). */
   onError?: AddonEngineErrorHandler;
+  /**
+   * In-process addons (ADR-0006, e.g. IPTV). Code-provided at construction —
+   * not persisted and not returned by list() (which stays HTTP-addons only).
+   * They fan out through the same gating/timeout/dedup/rank path as HTTP addons.
+   */
+  internalAddons?: InternalAddon[];
 }
 
 const STORAGE_KEY = "addons/installed";
@@ -82,6 +90,26 @@ function streamDedupKey(source: PlayableSource, fallback: number): string {
 }
 
 /**
+ * The uniform fan-out target: a manifest (for gating/merge) + the four resource
+ * fetchers. An HTTP addon's fetchers call the resource-client; an internal
+ * addon's delegate to its in-memory methods. Fan-out, dedup, and ranking are
+ * identical for both — only how a target answers differs.
+ */
+interface AddonTarget {
+  manifest: AddonManifest;
+  /** Real URL for HTTP addons; `internal:<id>` for internal ones (error labels). */
+  manifestUrl: string;
+  getCatalog(
+    type: MediaType,
+    catalogId: string,
+    extra?: CatalogExtra,
+  ): Promise<MetaPreview[]>;
+  getMeta(id: ContentId, type: MediaType): Promise<MetaDetail | null>;
+  getStreams(id: ContentId, type: MediaType): Promise<PlayableSource[]>;
+  getSubtitles(id: ContentId, type: MediaType): Promise<SubtitleTrack[]>;
+}
+
+/**
  * Loads persisted state, then returns a ready engine — which is why the
  * factory is async while the AddonEngine interface (list() is sync) stays
  * exactly as frozen in §6.2.
@@ -97,6 +125,7 @@ export async function createAddonEngine(
 
   let installed: InstalledAddon[] =
     (await storage.get<InstalledAddon[]>(STORAGE_KEY)) ?? [];
+  const internal = deps.internalAddons ?? [];
 
   const persist = () => storage.set(STORAGE_KEY, installed);
 
@@ -108,26 +137,65 @@ export async function createAddonEngine(
     }
   };
 
+  /** HTTP addon → target: fetchers call the resource-client over its URL. */
+  const httpTarget = (addon: InstalledAddon): AddonTarget => ({
+    manifest: addon.manifest,
+    manifestUrl: addon.manifestUrl,
+    getCatalog: (type, catalogId, extra) =>
+      fetchCatalog(
+        http,
+        addon.manifestUrl,
+        type,
+        catalogId,
+        timeouts.catalogMs,
+        extra,
+      ),
+    getMeta: (id, type) =>
+      fetchMeta(http, addon.manifestUrl, type, id, timeouts.metaMs),
+    getStreams: (id, type) =>
+      fetchStreams(
+        http,
+        addon.manifestUrl,
+        type,
+        id,
+        timeouts.streamMs,
+        addon.manifest.id,
+      ),
+    getSubtitles: (id, type) =>
+      fetchSubtitles(http, addon.manifestUrl, type, id, timeouts.subtitlesMs),
+  });
+
+  /** Internal addon → target: fetchers delegate to its in-memory methods. */
+  const internalTarget = (addon: InternalAddon): AddonTarget => ({
+    manifest: addon.manifest,
+    manifestUrl: `internal:${addon.manifest.id}`,
+    getCatalog: (type, catalogId, extra) =>
+      addon.getCatalog(type, catalogId, extra),
+    getMeta: (id, type) => addon.getMeta(id, type),
+    getStreams: (id, type) => addon.getStreams(id, type),
+    getSubtitles: (id, type) => addon.getSubtitles(id, type),
+  });
+
   /**
-   * Run one request per addon with timeout + partial-failure isolation;
-   * failed addons yield `fallback` and are reported. Promise.all preserves
-   * input (install) order, which is what the merge semantics rely on.
+   * Run one request per target with partial-failure isolation; failed targets
+   * yield `fallback` and are reported. Promise.all preserves input (install)
+   * order, which is what the merge semantics rely on.
    */
   function fanOut<T>(
-    addons: InstalledAddon[],
+    targets: AddonTarget[],
     resource: ResourceName,
     timeoutMs: number,
-    request: (addon: InstalledAddon) => Promise<T>,
+    request: (target: AddonTarget) => Promise<T>,
     fallback: T,
   ): Promise<T[]> {
     return Promise.all(
-      addons.map(async (addon) => {
+      targets.map(async (target) => {
         try {
-          return await request(addon);
+          return await request(target);
         } catch (error) {
           report({
-            manifestUrl: addon.manifestUrl,
-            addonId: addon.manifest.id,
+            manifestUrl: target.manifestUrl,
+            addonId: target.manifest.id,
             resource,
             error,
           });
@@ -137,15 +205,19 @@ export async function createAddonEngine(
     );
   }
 
-  const enabledServing = (
+  /**
+   * Enabled HTTP addons (install-order) followed by internal addons, filtered to
+   * those that can serve resource+type(+id). Internal addons are always active.
+   */
+  const serving = (
     resource: ResourceName,
     type: MediaType,
     id?: ContentId,
-  ): InstalledAddon[] =>
-    installed.filter(
-      (addon) =>
-        addon.enabled && servesResource(addon.manifest, resource, type, id),
-    );
+  ): AddonTarget[] =>
+    [
+      ...installed.filter((addon) => addon.enabled).map(httpTarget),
+      ...internal.map(internalTarget),
+    ].filter((target) => servesResource(target.manifest, resource, type, id));
 
   return {
     async install(manifestUrl: string): Promise<InstalledAddon> {
@@ -206,27 +278,16 @@ export async function createAddonEngine(
       catalogId: string,
       extra?: CatalogExtra,
     ): Promise<MetaPreview[]> {
-      const addons = installed.filter(
-        (addon) =>
-          addon.enabled &&
-          servesResource(addon.manifest, "catalog", type) &&
-          addon.manifest.catalogs.some(
-            (c) => c.type === type && c.id === catalogId,
-          ),
+      const targets = serving("catalog", type).filter((target) =>
+        target.manifest.catalogs.some(
+          (c) => c.type === type && c.id === catalogId,
+        ),
       );
       const perAddon = await fanOut(
-        addons,
+        targets,
         "catalog",
         timeouts.catalogMs,
-        (addon) =>
-          fetchCatalog(
-            http,
-            addon.manifestUrl,
-            type,
-            catalogId,
-            timeouts.catalogMs,
-            extra,
-          ),
+        (target) => target.getCatalog(type, catalogId, extra),
         [] as MetaPreview[],
       );
       const seen = new Set<string>();
@@ -241,13 +302,12 @@ export async function createAddonEngine(
     },
 
     async getMeta(id: ContentId, type: MediaType): Promise<MetaDetail | null> {
-      const addons = enabledServing("meta", type, id);
+      const targets = serving("meta", type, id);
       const results = await fanOut(
-        addons,
+        targets,
         "meta",
         timeouts.metaMs,
-        (addon) =>
-          fetchMeta(http, addon.manifestUrl, type, id, timeouts.metaMs),
+        (target) => target.getMeta(id, type),
         null,
       );
       return results.find((meta) => meta !== null) ?? null;
@@ -257,20 +317,12 @@ export async function createAddonEngine(
       id: ContentId,
       type: MediaType,
     ): Promise<PlayableSource[]> {
-      const addons = enabledServing("stream", type, id);
+      const targets = serving("stream", type, id);
       const perAddon = await fanOut(
-        addons,
+        targets,
         "stream",
         timeouts.streamMs,
-        (addon) =>
-          fetchStreams(
-            http,
-            addon.manifestUrl,
-            type,
-            id,
-            timeouts.streamMs,
-            addon.manifest.id,
-          ),
+        (target) => target.getStreams(id, type),
         [] as PlayableSource[],
       );
       const seen = new Set<string>();
@@ -289,19 +341,12 @@ export async function createAddonEngine(
       id: ContentId,
       type: MediaType,
     ): Promise<SubtitleTrack[]> {
-      const addons = enabledServing("subtitles", type, id);
+      const targets = serving("subtitles", type, id);
       const perAddon = await fanOut(
-        addons,
+        targets,
         "subtitles",
         timeouts.subtitlesMs,
-        (addon) =>
-          fetchSubtitles(
-            http,
-            addon.manifestUrl,
-            type,
-            id,
-            timeouts.subtitlesMs,
-          ),
+        (target) => target.getSubtitles(id, type),
         [] as SubtitleTrack[],
       );
       const seen = new Set<string>();

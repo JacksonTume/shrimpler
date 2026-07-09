@@ -6,7 +6,26 @@
 import { describe, expect, it, vi } from "vitest";
 import type { DebridProvider } from "../debrid/provider";
 import type { PlayableSource } from "../types/sources";
+import type { StorageAdapter } from "../adapters/storage";
+import { createTtlCache } from "../cache";
+import { createMetadataResolver } from "../metadata/create-resolver";
 import { createStreamService } from "./stream-service";
+
+function memoryStorage(): StorageAdapter {
+  const store = new Map<string, unknown>();
+  return {
+    get: <T>(key: string) => Promise.resolve((store.get(key) as T) ?? null),
+    set: (key: string, value: unknown) => {
+      store.set(key, value);
+      return Promise.resolve();
+    },
+    delete: (key: string) => {
+      store.delete(key);
+      return Promise.resolve();
+    },
+    keys: () => Promise.resolve([...store.keys()]),
+  };
+}
 
 function source(over: Partial<PlayableSource>): PlayableSource {
   return { id: over.id ?? "s", kind: "vod", ...over };
@@ -53,6 +72,26 @@ describe("StreamService.getRankedStreams", () => {
 
     expect(await service.getRankedStreams("kitsu:5", "series")).toEqual([]);
     expect(getStreams).not.toHaveBeenCalled();
+  });
+
+  it("keeps an IPTV live source through the real resolver (ADR-0006)", async () => {
+    // Regression: an id no provider owns must reach the addon, not be dropped.
+    const live = source({
+      id: "iptv:x#live",
+      kind: "live",
+      url: "http://h/x.m3u8",
+    });
+    const getStreams = vi.fn(() => Promise.resolve([live]));
+    const metadata = createMetadataResolver({
+      addons: { getMeta: () => Promise.resolve(null) },
+      providers: [], // no provider owns "iptv:"
+      cache: createTtlCache({ storage: memoryStorage() }),
+    });
+    const service = createStreamService({ addons: { getStreams }, metadata });
+
+    const ranked = await service.getRankedStreams("iptv:x", "tv");
+    expect(ranked).toEqual([live]);
+    expect(getStreams).toHaveBeenCalledWith("iptv:x", "tv");
   });
 
   it("annotates the debrid cached signal so it breaks resolution ties", async () => {

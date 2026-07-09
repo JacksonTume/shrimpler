@@ -7,8 +7,10 @@ import type { HttpAdapter, HttpResponse } from "../adapters/http";
 import type { StorageAdapter } from "../adapters/storage";
 import { createAddonEngine } from "./create-engine";
 import type { AddonEngineError } from "./create-engine";
+import type { InternalAddon } from "./internal-addon";
 import { AddonInstallError } from "./manifest";
 import { AddonTimeoutError } from "./timeout";
+import { createIptvAddon } from "../iptv/iptv-addon";
 
 function memoryStorage(): StorageAdapter {
   const store = new Map<string, unknown>();
@@ -106,6 +108,7 @@ async function engineWith(
     storage?: StorageAdapter;
     timeouts?: { streamMs?: number; catalogMs?: number };
     onError?: (error: AddonEngineError) => void;
+    internalAddons?: InternalAddon[];
   },
 ) {
   const http = mockHttp(routes);
@@ -115,6 +118,7 @@ async function engineWith(
     storage,
     timeouts: options?.timeouts,
     onError: options?.onError,
+    internalAddons: options?.internalAddons,
   });
   return { engine, http, storage };
 }
@@ -474,5 +478,71 @@ describe("onError hook", () => {
     await engine.install(MOVIES_URL);
     await expect(engine.getCatalog("movie", "popular")).resolves.toEqual([]);
     expect(onError).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("internal addons (ADR-0006)", () => {
+  const iptv = (): InternalAddon =>
+    createIptvAddon({
+      channels: [
+        {
+          id: "x",
+          name: "Channel X",
+          url: "https://live/x.m3u8",
+          group: "News",
+        },
+      ],
+      movies: [],
+      series: [],
+    });
+
+  it("fans catalog/meta/stream out to an internal addon (no HTTP addons)", async () => {
+    const { engine, http } = await engineWith({}, { internalAddons: [iptv()] });
+
+    const catalog = await engine.getCatalog("tv", "iptv:live");
+    expect(catalog.map((c) => c.id)).toEqual(["iptv:live:x"]);
+
+    const meta = await engine.getMeta("iptv:live:x", "tv");
+    expect(meta?.name).toBe("Channel X");
+
+    const streams = await engine.getStreams("iptv:live:x", "tv");
+    expect(streams).toEqual([
+      {
+        id: "iptv:live:x#live",
+        kind: "live",
+        url: "https://live/x.m3u8",
+        title: "Channel X",
+        source: "org.shrimpler.iptv",
+      },
+    ]);
+
+    // Internal addons are code-provided: not persisted, not in list().
+    expect(engine.list()).toEqual([]);
+    expect(http.calls).toEqual([]);
+  });
+
+  it("gates by type/idPrefix across mixed HTTP + internal addons", async () => {
+    const { engine, http } = await engineWith(
+      {
+        [MOVIES_URL]: { body: MOVIES_MANIFEST },
+        "https://movies.example/stream/movie/tt1.json": {
+          body: { streams: [{ url: "https://cdn/movie.mp4" }] },
+        },
+      },
+      { internalAddons: [iptv()] },
+    );
+    await engine.install(MOVIES_URL);
+
+    // A tv id reaches only the internal addon — the movie addon serves 'movie'.
+    const live = await engine.getStreams("iptv:live:x", "tv");
+    expect(live.map((s) => s.url)).toEqual(["https://live/x.m3u8"]);
+    expect(http.calls).not.toContain(
+      "https://movies.example/stream/tv/iptv:live:x.json",
+    );
+
+    // A movie id reaches only the HTTP addon — the internal addon's iptv:
+    // idPrefix excludes it, so it is never asked for tt1.
+    const movie = await engine.getStreams("tt1", "movie");
+    expect(movie.map((s) => s.url)).toEqual(["https://cdn/movie.mp4"]);
   });
 });

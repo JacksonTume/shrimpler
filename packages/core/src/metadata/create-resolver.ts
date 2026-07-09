@@ -218,7 +218,10 @@ export function createMetadataResolver(
       // IMDb id, then re-attach any :S:E episode coordinates.
       const native = providerForNamespace(namespace);
       if (native?.getImdbId === undefined) {
-        return null;
+        // No provider owns this namespace (e.g. "iptv:", "kitsu:") — the addon
+        // that served the catalog also serves streams for its own ids, so pass
+        // the id through unchanged rather than dropping it (ADR-0006).
+        return id;
       }
       try {
         const resolved = await native.getImdbId(id, type);
