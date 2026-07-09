@@ -50,6 +50,34 @@ export const labels = {
   searchEmpty: "No results.",
   searchError: "Could not search. Please try again.",
 
+  // Live TV / IPTV (§8, ADR-0006). "Channel"/"catalog" is internal vocabulary;
+  // the presentation layer says "Live TV". Playlists are user-supplied M3U URLs
+  // stored locally, never bundled (neutrality, §14.3). Error copy is generic —
+  // the raw engine message goes to the debug channel, not the UI (ADR-0007).
+  liveTv: "Live TV",
+  moviesTitle: "Movies",
+  seriesTitle: "Series",
+  channelsTitle: "Live TV",
+  channelsLoading: "Loading…",
+  channelsEmpty: "Nothing here yet. Add an IPTV source to get started.",
+  channelsError: "Could not load this. Please try again.",
+  iptvTitle: "IPTV playlists",
+  iptvUrlLabel: "M3U playlist URL",
+  iptvAddButton: "Add playlist",
+  iptvEmpty: "No IPTV playlists added",
+  iptvAddError: "Could not add that playlist. Check the URL and try again.",
+  // Xtream Codes account (§8): host + user + password, stored locally (§14.3).
+  // Exposes live + VOD (movies/series) with richer metadata than a flat M3U.
+  xtreamTitle: "Xtream accounts",
+  xtreamHost: "Server URL",
+  xtreamUsername: "Username",
+  xtreamPassword: "Password",
+  xtreamAddButton: "Add account",
+  xtreamEmpty: "No Xtream accounts added",
+  xtreamAddError:
+    "Could not add that account. Check the details and try again.",
+  removeAccount: "Remove",
+
   // Detail screen (§4.2 MetaDetail, ADR-0003). Presentation of metadata only —
   // never a stream source. Generic states; no title/id is ever hard-coded here.
   detailLoading: "Loading…",
@@ -75,6 +103,10 @@ export const labels = {
   pause: "Pause",
   playbackLoading: "Loading…",
   playbackError: "Could not play this. Please try again.",
+  // Live playback (§8, ADR-0006): a channel has no fixed duration, so no
+  // seek/resume; a transient stall shows "Reconnecting…" while hls.js recovers.
+  live: "Live",
+  reconnecting: "Reconnecting…",
 
   // Settings screen. TMDB is a metadata provider (presentation data only,
   // §5.1) — naming it is neutrality-safe; it is not a content source. The key

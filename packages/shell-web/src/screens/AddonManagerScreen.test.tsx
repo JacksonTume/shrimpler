@@ -13,7 +13,12 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { CoreProvider, labels } from "@shrimpler/shared-ui";
 import { AddonInstallError } from "@shrimpler/core";
-import type { AddonEngine, Core, InstalledAddon } from "@shrimpler/core";
+import type {
+  AddonEngine,
+  Core,
+  InstalledAddon,
+  IptvService,
+} from "@shrimpler/core";
 import {
   destroyFocusEngine,
   initBackHandling,
@@ -68,11 +73,25 @@ function createFakeEngine(seed: InstalledAddon[] = []): AddonEngine {
   };
 }
 
+function createFakeIptv(): IptvService {
+  return {
+    listPlaylists: () => Promise.resolve([]),
+    addPlaylist: () => Promise.resolve(),
+    removePlaylist: () => Promise.resolve(),
+    listXtreamAccounts: () => Promise.resolve([]),
+    addXtreamAccount: () => Promise.resolve(),
+    removeXtreamAccount: () => Promise.resolve(),
+  };
+}
+
 function renderScreen(engine: AddonEngine) {
-  const core = { addons: engine } as unknown as Core;
+  const core = { addons: engine, iptv: createFakeIptv() } as unknown as Core;
   return render(
     <CoreProvider core={core}>
-      <AddonManagerScreen onNavigate={() => {}} />
+      <AddonManagerScreen
+        onNavigate={() => {}}
+        reloadCore={() => Promise.resolve()}
+      />
     </CoreProvider>,
   );
 }

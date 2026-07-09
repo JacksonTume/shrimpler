@@ -22,6 +22,8 @@ import type {
   PlayerState,
   TrackInfo,
 } from "@shrimpler/core";
+import type { HlsEngine, HlsFactory } from "./hls-engine";
+import { createHlsEngine, hlsSupported } from "./hls-engine";
 
 /** Buffered seconds ahead of (or covering) the current position; 0 if unknown. */
 function bufferedAhead(video: HTMLVideoElement): number {
@@ -79,8 +81,18 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
   private readonly domHandlers: Array<[string, EventListener]> = [];
   private state: PlayerState = { ...IDLE_STATE };
   private hasSource = false;
+  /** Active hls.js engine for the current HLS source, else null. */
+  private hls: HlsEngine | null = null;
+  private readonly hlsFactory: HlsFactory;
+  private readonly isHlsSupported: () => boolean;
 
-  constructor() {
+  constructor(deps?: {
+    /** Injectable for tests (jsdom can't run MSE); defaults to real hls.js. */
+    hlsFactory?: HlsFactory;
+    hlsSupported?: () => boolean;
+  }) {
+    this.hlsFactory = deps?.hlsFactory ?? createHlsEngine;
+    this.isHlsSupported = deps?.hlsSupported ?? hlsSupported;
     this.video = document.createElement("video");
     this.video.preload = "metadata";
     this.video.playsInline = true;
@@ -195,13 +207,75 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
     }
   }
 
+  /**
+   * HLS (.m3u8) needs hls.js unless the browser plays it natively (Safari/iOS).
+   * Raw MPEG-TS (.ts) live is not covered (would need mpegts.js) — a known gap.
+   */
+  private shouldUseHls(url: string): boolean {
+    if (!/\.m3u8(\?|#|$)/i.test(url)) {
+      return false;
+    }
+    const nativeHls =
+      this.video.canPlayType("application/vnd.apple.mpegurl") !== "";
+    return !nativeHls && this.isHlsSupported();
+  }
+
+  private destroyHls(): void {
+    if (this.hls !== null) {
+      this.hls.destroy();
+      this.hls = null;
+    }
+  }
+
   load(source: PlayableSource): Promise<void> {
     if (source.url === undefined) {
       return Promise.reject(
         new Error("Html5VideoPlayerAdapter.load: source has no resolved url"),
       );
     }
+    const url = source.url;
+    // A prior HLS engine must be torn down before a new source loads.
+    this.destroyHls();
+
     return new Promise<void>((resolve, reject) => {
+      if (source.behaviorHints?.notWebReady === true) {
+        // Non-fatal: attempt playback but let the UI warn (§8.3 codec gap).
+        this.emit("error", {
+          error: {
+            code: "NOT_WEB_READY",
+            message: "This source may not play in the browser.",
+            fatal: false,
+          },
+        });
+      }
+
+      this.hasSource = true;
+      this.emit("statuschange", { status: "loading" });
+
+      if (this.shouldUseHls(url)) {
+        // hls.js drives the same <video> element, so the DOM handlers attached
+        // in the constructor (timeupdate/ended/…) keep working; only load
+        // lifecycle + reconnect come through the engine callbacks.
+        this.hls = this.hlsFactory({ headers: source.headers });
+        this.hls.load(url, this.video, {
+          onManifestParsed: () => {
+            this.syncStatus();
+            resolve();
+          },
+          onReconnecting: () =>
+            this.emit("reconnecting", { status: "buffering" }),
+          onFatalError: (message) => {
+            this.emit("error", {
+              status: "error",
+              error: { code: "HLS_FATAL", message, fatal: true },
+            });
+            reject(new Error(`Html5VideoPlayerAdapter.load: ${message}`));
+          },
+        });
+        return;
+      }
+
+      // Native path: progressive files, or HLS on browsers with native support.
       const onLoaded = (): void => {
         cleanup();
         resolve();
@@ -216,21 +290,7 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
       };
       this.video.addEventListener("loadedmetadata", onLoaded);
       this.video.addEventListener("error", onError);
-
-      if (source.behaviorHints?.notWebReady === true) {
-        // Non-fatal: attempt playback but let the UI warn (§8.3 codec gap).
-        this.emit("error", {
-          error: {
-            code: "NOT_WEB_READY",
-            message: "This source may not play in the browser.",
-            fatal: false,
-          },
-        });
-      }
-
-      this.hasSource = true;
-      this.emit("statuschange", { status: "loading" });
-      this.video.src = source.url as string;
+      this.video.src = url;
       this.video.load();
     });
   }
@@ -250,6 +310,7 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
   }
 
   stop(): void {
+    this.destroyHls();
     this.video.pause();
     this.video.removeAttribute("src");
     this.video.load();
@@ -301,6 +362,7 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
   }
 
   destroy(): void {
+    this.destroyHls();
     for (const [name, fn] of this.domHandlers) {
       this.video.removeEventListener(name, fn);
     }

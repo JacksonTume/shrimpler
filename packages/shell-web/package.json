@@ -14,6 +14,7 @@
     "@noriginmedia/norigin-spatial-navigation": "^3.2.1",
     "@shrimpler/core": "workspace:*",
     "@shrimpler/shared-ui": "workspace:*",
+    "hls.js": "^1.5.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

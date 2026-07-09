@@ -6,4 +6,10 @@ import { defineConfig } from "vite";
 // source via their "exports" fields.
 export default defineConfig({
   plugins: [react()],
+  build: {
+    // hls.js (~0.5 MB) is dynamically imported into its own chunk and fetched
+    // only when a live stream plays (see players/hls-engine.ts), so its size is
+    // intentional and off the initial load path — lift the warning above it.
+    chunkSizeWarningLimit: 600,
+  },
 });

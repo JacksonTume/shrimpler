@@ -12,6 +12,9 @@ import type { NavigationProps } from "../navigation";
 
 const SCREEN_FOCUS_KEY = "HOME";
 const SEARCH_FOCUS_KEY = "HOME_SEARCH";
+const LIVE_FOCUS_KEY = "HOME_LIVE";
+const MOVIES_FOCUS_KEY = "HOME_MOVIES";
+const SERIES_FOCUS_KEY = "HOME_SERIES";
 const ADD_FOCUS_KEY = "HOME_ADD";
 const SETTINGS_FOCUS_KEY = "HOME_SETTINGS";
 
@@ -162,6 +165,42 @@ export function HomeScreen({ onNavigate }: NavigationProps) {
             focusKey={SEARCH_FOCUS_KEY}
             label={labels.searchTitle}
             onPress={() => onNavigate({ screen: "search" })}
+          />
+          <HomeButton
+            focusKey={LIVE_FOCUS_KEY}
+            label={labels.liveTv}
+            onPress={() =>
+              onNavigate({
+                screen: "catalog",
+                catalogType: "tv",
+                catalogId: "iptv:live",
+                title: labels.liveTv,
+              })
+            }
+          />
+          <HomeButton
+            focusKey={MOVIES_FOCUS_KEY}
+            label={labels.moviesTitle}
+            onPress={() =>
+              onNavigate({
+                screen: "catalog",
+                catalogType: "movie",
+                catalogId: "iptv:movies",
+                title: labels.moviesTitle,
+              })
+            }
+          />
+          <HomeButton
+            focusKey={SERIES_FOCUS_KEY}
+            label={labels.seriesTitle}
+            onPress={() =>
+              onNavigate({
+                screen: "catalog",
+                catalogType: "series",
+                catalogId: "iptv:series",
+                title: labels.seriesTitle,
+              })
+            }
           />
           <HomeButton
             focusKey={ADD_FOCUS_KEY}

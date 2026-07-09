@@ -14,6 +14,14 @@ export type Route =
   | { screen: "addons" }
   | { screen: "settings" }
   | { screen: "search" }
+  // A browsable IPTV catalog (Live TV / Movies / Series) — carries the addon
+  // catalog identity + a display title.
+  | {
+      screen: "catalog";
+      catalogType: MediaType;
+      catalogId: string;
+      title: string;
+    }
   | { screen: "detail"; id: ContentId; type: MediaType }
   // Playback carries an already-resolved source (with a playable url), the
   // content identity it belongs to (for continue-watching progress + resume),

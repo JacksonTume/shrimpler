@@ -66,12 +66,18 @@ export function PlaybackScreen({
   back,
   onNavigate,
 }: PlaybackScreenProps) {
+  // Live streams (IPTV channels) have no fixed duration: no seek bar, no resume,
+  // and continue-watching must not record a channel as "in progress".
+  const isLive = source.kind === "live";
+
   const playerRef = useRef<Html5VideoPlayerAdapter | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [status, setStatus] = useState<PlayerState["status"]>("loading");
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  // True while hls.js recovers from a transient live-stream error.
+  const [reconnecting, setReconnecting] = useState(false);
 
   // Continue-watching: record progress on timeupdate (throttled) + on
   // pause/ended/unmount (flush); resume from the saved position once loaded.
@@ -114,6 +120,9 @@ export function PlaybackScreen({
       }
     };
 
+    // Continue-watching is meaningless for live — skip all persistence.
+    const live = source.kind === "live";
+
     const unsubscribe = [
       player.on("statuschange", (p) => {
         if (p.status !== undefined) setStatus(p.status);
@@ -122,19 +131,28 @@ export function PlaybackScreen({
           setDuration(p.durationSec);
         }
         trackPosition(p.positionSec);
-        // A pause is a good moment to persist the exact position.
-        if (p.status === "paused") {
+        // Recovering from a live stall clears the reconnecting indicator.
+        if (p.status === "playing") {
+          setReconnecting(false);
+        }
+        // A pause is a good moment to persist the exact position (VOD only).
+        if (!live && p.status === "paused") {
           flushRef.current(positionRef.current, durationRef.current);
         }
       }),
       player.on("timeupdate", (p) => {
         trackPosition(p.positionSec);
-        recordRef.current(positionRef.current, durationRef.current);
+        if (!live) {
+          recordRef.current(positionRef.current, durationRef.current);
+        }
       }),
+      player.on("reconnecting", () => setReconnecting(true)),
       player.on("ended", () => {
         setStatus("ended");
         // At/near the end this evicts the entry (finished) in the library.
-        flushRef.current(durationRef.current, durationRef.current);
+        if (!live) {
+          flushRef.current(durationRef.current, durationRef.current);
+        }
       }),
       player.on("error", (p) => {
         if (p.error?.fatal === true) {
@@ -153,7 +171,9 @@ export function PlaybackScreen({
         dispose();
       }
       // Persist the final position before tearing down (e.g. Back mid-playback).
-      flushRef.current(positionRef.current, durationRef.current);
+      if (!live) {
+        flushRef.current(positionRef.current, durationRef.current);
+      }
       player.destroy();
       playerRef.current = null;
     };
@@ -163,6 +183,7 @@ export function PlaybackScreen({
   // a single time so it doesn't fight the user scrubbing.
   useEffect(() => {
     if (
+      !isLive &&
       !resumedRef.current &&
       resumePositionSec > 0 &&
       duration > 0 &&
@@ -173,7 +194,7 @@ export function PlaybackScreen({
       setPosition(resumePositionSec);
       resumedRef.current = true;
     }
-  }, [resumePositionSec, duration]);
+  }, [resumePositionSec, duration, isLive]);
 
   const togglePlay = useCallback(() => {
     const player = playerRef.current;
@@ -217,6 +238,20 @@ export function PlaybackScreen({
         <header style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
           <BackButton onBack={goBack} focusKey={BACK_FOCUS_KEY} />
           {source.title !== undefined && <h1>{source.title}</h1>}
+          {isLive && (
+            <span
+              style={{
+                padding: "0.1rem 0.4rem",
+                background: "#c33",
+                color: "#fff",
+                borderRadius: "3px",
+                fontSize: "0.8rem",
+                textTransform: "uppercase",
+              }}
+            >
+              {labels.live}
+            </span>
+          )}
         </header>
 
         <div ref={containerRef} style={{ margin: "1rem 0" }} />
@@ -256,6 +291,9 @@ export function PlaybackScreen({
 
         {status === "loading" && error === null && (
           <p role="status">{labels.playbackLoading}</p>
+        )}
+        {reconnecting && error === null && (
+          <p role="status">{labels.reconnecting}</p>
         )}
       </main>
     </FocusContext.Provider>

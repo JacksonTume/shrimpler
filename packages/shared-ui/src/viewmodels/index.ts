@@ -3,9 +3,17 @@
 // state + handlers, shared by both shells. Must stay shell-agnostic. The
 // state-management contract (§13.4) is settled: plain React state (useState/
 // useCallback), the Core reached via useCore(), no external store.
-// TODO(Phase 1): useCatalog.
 export { useAddonManager } from "./use-addon-manager";
 export type { UseAddonManagerResult } from "./use-addon-manager";
+
+export { useCatalog } from "./use-catalog";
+export type { UseCatalogResult } from "./use-catalog";
+
+export { useIptvPlaylists } from "./use-iptv-playlists";
+export type { UseIptvPlaylistsResult } from "./use-iptv-playlists";
+
+export { useIptvXtream } from "./use-iptv-xtream";
+export type { UseIptvXtreamResult } from "./use-iptv-xtream";
 
 export { useDetail } from "./use-detail";
 export type { UseDetailResult } from "./use-detail";

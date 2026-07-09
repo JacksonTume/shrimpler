@@ -9,6 +9,15 @@ export { CoreProvider, useCore } from "./context/core-context";
 export { useAddonManager } from "./viewmodels/index";
 export type { UseAddonManagerResult } from "./viewmodels/index";
 
+export { useCatalog } from "./viewmodels/index";
+export type { UseCatalogResult } from "./viewmodels/index";
+
+export { useIptvPlaylists } from "./viewmodels/index";
+export type { UseIptvPlaylistsResult } from "./viewmodels/index";
+
+export { useIptvXtream } from "./viewmodels/index";
+export type { UseIptvXtreamResult } from "./viewmodels/index";
+
 export { useDetail } from "./viewmodels/index";
 export type { UseDetailResult } from "./viewmodels/index";
 

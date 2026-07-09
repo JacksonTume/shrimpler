@@ -7,6 +7,7 @@ import { AddonManagerScreen } from "./screens/AddonManagerScreen";
 import { DetailScreen } from "./screens/DetailScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 import { SearchScreen } from "./screens/SearchScreen";
+import { CatalogScreen } from "./screens/CatalogScreen";
 import { PlaybackScreen } from "./screens/PlaybackScreen";
 import type { Route } from "./navigation";
 
@@ -97,11 +98,18 @@ export function App({ reloadCore }: AppProps) {
           <FocusSpikeScreen />
         </Suspense>
       ) : route.screen === "addons" ? (
-        <AddonManagerScreen onNavigate={setRoute} />
+        <AddonManagerScreen onNavigate={setRoute} reloadCore={reloadCore} />
       ) : route.screen === "settings" ? (
         <SettingsScreen onNavigate={setRoute} reloadCore={reloadCore} />
       ) : route.screen === "search" ? (
         <SearchScreen onNavigate={setRoute} />
+      ) : route.screen === "catalog" ? (
+        <CatalogScreen
+          onNavigate={setRoute}
+          catalogType={route.catalogType}
+          catalogId={route.catalogId}
+          title={route.title}
+        />
       ) : route.screen === "detail" ? (
         <DetailScreen onNavigate={setRoute} id={route.id} type={route.type} />
       ) : route.screen === "player" ? (
