@@ -11,7 +11,12 @@
 // internal addons bypass resource-client's type→kind mapping.
 
 import type { InternalAddon } from "../addon/internal-addon";
-import type { AddonManifest, CatalogDef } from "../types/addon";
+import type {
+  AddonManifest,
+  CatalogDef,
+  CatalogExtra,
+  CatalogGenre,
+} from "../types/addon";
 import type { ContentId, MediaType } from "../types/ids";
 import type { EpisodeRef, MetaDetail, MetaPreview } from "../types/meta";
 import type { PlayableSource } from "../types/sources";
@@ -32,6 +37,11 @@ const CATALOG_MOVIES = "iptv:movies";
 const CATALOG_SERIES = "iptv:series";
 /** Matches an episode content id `iptv:series:<id>:<S>:<E>` → captures the series id. */
 const EPISODE_RE = /^(iptv:series:.+):\d+:\d+$/;
+
+/** Page size for catalog paging: how many previews one getCatalog call returns. */
+export const CATALOG_PAGE_SIZE = 100;
+/** Bucket key for items with no group-title (empty string ⇒ "uncategorized"). */
+const UNCATEGORIZED = "";
 
 // ---- live channels ---------------------------------------------------------
 
@@ -151,6 +161,52 @@ interface ResolvedSeries {
   sources: Map<ContentId, PlayableSource>;
 }
 
+// ---- catalog index (grouping + paging) -------------------------------------
+
+interface CatalogIndex {
+  /** Full preview list in source order (the "All" view). */
+  all: MetaPreview[];
+  /** Previews bucketed by group key; `UNCATEGORIZED` ("") holds ungrouped items. */
+  byGenre: Map<string, MetaPreview[]>;
+  /** Categories with counts, sorted alpha with the uncategorized bucket last. */
+  genres: CatalogGenre[];
+}
+
+/**
+ * Precompute the browse index for one content kind: the flat list, the
+ * group→previews buckets, and the sorted category list with counts. A
+ * `group-title` can be an empty string (parse-m3u), so we trim-and-falsy-check
+ * rather than only guarding `undefined`; such items fall into the "" bucket.
+ */
+function buildIndex<T>(
+  items: readonly T[],
+  toPreview: (item: T) => MetaPreview,
+  groupOf: (item: T) => string | undefined,
+): CatalogIndex {
+  const all: MetaPreview[] = [];
+  const byGenre = new Map<string, MetaPreview[]>();
+  for (const item of items) {
+    const preview = toPreview(item);
+    all.push(preview);
+    const raw = groupOf(item)?.trim();
+    const key = raw ? raw : UNCATEGORIZED;
+    const bucket = byGenre.get(key);
+    if (bucket === undefined) {
+      byGenre.set(key, [preview]);
+    } else {
+      bucket.push(preview);
+    }
+  }
+  const genres = [...byGenre.entries()]
+    .map(([name, list]) => ({ name, count: list.length }))
+    .sort((a, b) => {
+      if (a.name === UNCATEGORIZED) return 1;
+      if (b.name === UNCATEGORIZED) return -1;
+      return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+    });
+  return { all, byGenre, genres };
+}
+
 /**
  * Build an internal IPTV addon from unified content. Channels and movies are
  * precomputed (O(1) lookups); series episodes are resolved on first access and
@@ -163,9 +219,31 @@ export function createIptvAddon(
 ): InternalAddon {
   const addonId = options.id ?? DEFAULT_ID;
 
-  const liveCatalog = content.channels.map(channelPreview);
-  const movieCatalog = content.movies.map(moviePreview);
-  const seriesCatalog = content.series.map(seriesPreview);
+  const liveIndex = buildIndex(
+    content.channels,
+    channelPreview,
+    (c) => c.group,
+  );
+  const movieIndex = buildIndex(content.movies, moviePreview, (m) => m.group);
+  const seriesIndex = buildIndex(
+    content.series,
+    seriesPreview,
+    (s) => s.group,
+  );
+
+  /** Resolve (type, catalogId) → its index, or null when the pair isn't ours. */
+  function indexFor(type: MediaType, catalogId: string): CatalogIndex | null {
+    if (catalogId === CATALOG_LIVE && (type === "tv" || type === "channel")) {
+      return liveIndex;
+    }
+    if (catalogId === CATALOG_MOVIES && type === "movie") {
+      return movieIndex;
+    }
+    if (catalogId === CATALOG_SERIES && type === "series") {
+      return seriesIndex;
+    }
+    return null;
+  }
 
   const channelById = new Map<ContentId, Channel>();
   for (const channel of content.channels) {
@@ -248,17 +326,30 @@ export function createIptvAddon(
   return {
     manifest,
 
-    getCatalog(type: MediaType, catalogId: string): Promise<MetaPreview[]> {
-      if (catalogId === CATALOG_LIVE && (type === "tv" || type === "channel")) {
-        return Promise.resolve(liveCatalog);
+    getCatalog(
+      type: MediaType,
+      catalogId: string,
+      extra?: CatalogExtra,
+    ): Promise<MetaPreview[]> {
+      const index = indexFor(type, catalogId);
+      if (index === null) {
+        return Promise.resolve([]);
       }
-      if (catalogId === CATALOG_MOVIES && type === "movie") {
-        return Promise.resolve(movieCatalog);
-      }
-      if (catalogId === CATALOG_SERIES && type === "series") {
-        return Promise.resolve(seriesCatalog);
-      }
-      return Promise.resolve([]);
+      // genre undefined ⇒ "All"; "" ⇒ uncategorized; else the named group.
+      const base =
+        extra?.genre === undefined
+          ? index.all
+          : (index.byGenre.get(extra.genre) ?? []);
+      const skip = extra?.skip ?? 0;
+      return Promise.resolve(base.slice(skip, skip + CATALOG_PAGE_SIZE));
+    },
+
+    getCatalogGenres(
+      type: MediaType,
+      catalogId: string,
+    ): Promise<CatalogGenre[]> {
+      const index = indexFor(type, catalogId);
+      return Promise.resolve(index === null ? [] : index.genres);
     },
 
     async getMeta(contentId: ContentId): Promise<MetaDetail | null> {

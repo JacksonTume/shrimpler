@@ -17,6 +17,7 @@ import {
   TMDB_API_KEY_STORAGE_KEY,
 } from "@shrimpler/shared-ui";
 import { Html5VideoPlayerAdapter } from "./players/html5-video";
+import { IdbStorageAdapter } from "./adapters/idb-storage";
 
 const STORAGE_PREFIX = "shrimpler:";
 
@@ -27,8 +28,10 @@ function encodeForm(params: Record<string, string>): string {
     .join("&");
 }
 
-// localStorage-backed for now; large datasets (EPG, cache) move to IndexedDB
-// per §7.2. TODO(Phase 2): IndexedDB-backed adapter for the iptv/cache modules.
+// localStorage-backed key-value store for small config (installed addons, tokens,
+// continue-watching, IPTV source lists). Large datasets — the IPTV content-snapshot
+// cache — use IdbStorageAdapter instead (wired as iptvCacheStorage below), since
+// they would overflow localStorage's ~5 MB quota (§7.2, ADR-0006).
 class WebStorageAdapter implements StorageAdapter {
   get<T>(key: string): Promise<T | null> {
     const raw = window.localStorage.getItem(STORAGE_PREFIX + key);
@@ -161,6 +164,9 @@ export async function createWebCore(): Promise<Core> {
   return createCore({
     storage,
     http,
+    // Large IPTV content snapshots go to IndexedDB (localStorage would overflow);
+    // it falls back to `storage` if IndexedDB is unavailable (ADR-0006).
+    iptvCacheStorage: new IdbStorageAdapter(storage),
     playerFactory: () => new Html5VideoPlayerAdapter(),
     providers: await metadataProviders(http, storage),
     debrid: await debridProvider(http, storage),

@@ -61,6 +61,22 @@ export const labels = {
   channelsLoading: "Loading…",
   channelsEmpty: "Nothing here yet. Add an IPTV source to get started.",
   channelsError: "Could not load this. Please try again.",
+  // Category drill-down (ADR-0006): a catalog's groups (M3U group-title / Xtream
+  // categories) as a browsable list, so 10k+ channels stay navigable. "All" and
+  // "Uncategorized" are synthetic buckets; group names themselves are passthrough.
+  categoriesTitle: "Categories",
+  categoryAll: "All",
+  categoryUncategorized: "Uncategorized",
+  categoryCount: "items",
+  loadMore: "Load more",
+  // Background refresh indicator (ADR-0006): shown while sources are fetched.
+  // Phase copy is generic and neutral — no host/url/credential ever appears.
+  iptvRefreshTitle: "Updating channels…",
+  iptvRefreshDownload: "Downloading playlist…",
+  iptvRefreshParse: "Organizing channels…",
+  iptvRefreshCategories: "Loading categories…",
+  iptvRefreshStreams: "Loading channels & movies…",
+  iptvRefreshWaiting: "Preparing…",
   iptvTitle: "IPTV playlists",
   iptvUrlLabel: "M3U playlist URL",
   iptvAddButton: "Add playlist",

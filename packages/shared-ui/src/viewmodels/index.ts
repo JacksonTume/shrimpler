@@ -9,11 +9,23 @@ export type { UseAddonManagerResult } from "./use-addon-manager";
 export { useCatalog } from "./use-catalog";
 export type { UseCatalogResult } from "./use-catalog";
 
+export { useCatalogCategories } from "./use-catalog-categories";
+export type {
+  UseCatalogCategoriesResult,
+  CatalogCategory,
+} from "./use-catalog-categories";
+
+export { useCatalogPage } from "./use-catalog-page";
+export type { UseCatalogPageResult } from "./use-catalog-page";
+
 export { useIptvPlaylists } from "./use-iptv-playlists";
 export type { UseIptvPlaylistsResult } from "./use-iptv-playlists";
 
 export { useIptvXtream } from "./use-iptv-xtream";
 export type { UseIptvXtreamResult } from "./use-iptv-xtream";
+
+export { useIptvRefresh } from "./use-iptv-refresh";
+export type { UseIptvRefreshResult } from "./use-iptv-refresh";
 
 export { useDetail } from "./use-detail";
 export type { UseDetailResult } from "./use-detail";

@@ -67,6 +67,7 @@ function createFakeEngine(seed: InstalledAddon[] = []): AddonEngine {
     },
     list: () => installed.map((a) => ({ ...a })),
     getCatalog: () => Promise.resolve([]),
+    getCatalogGenres: () => Promise.resolve([]),
     getMeta: () => Promise.resolve(null),
     getStreams: () => Promise.resolve([]),
     getSubtitles: () => Promise.resolve([]),
@@ -81,6 +82,7 @@ function createFakeIptv(): IptvService {
     listXtreamAccounts: () => Promise.resolve([]),
     addXtreamAccount: () => Promise.resolve(),
     removeXtreamAccount: () => Promise.resolve(),
+    refresh: () => Promise.resolve({ changed: false }),
   };
 }
 

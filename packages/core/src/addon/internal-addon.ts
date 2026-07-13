@@ -11,7 +11,7 @@ import type { ContentId, MediaType } from "../types/ids";
 import type { MetaDetail, MetaPreview } from "../types/meta";
 import type { PlayableSource, SubtitleTrack } from "../types/sources";
 import type { AddonManifest } from "../types/addon";
-import type { CatalogExtra } from "../types/addon";
+import type { CatalogExtra, CatalogGenre } from "../types/addon";
 
 export interface InternalAddon {
   /** A manifest-shaped capability descriptor (id, types, catalogs, idPrefixes). */
@@ -21,6 +21,11 @@ export interface InternalAddon {
     catalogId: string,
     extra?: CatalogExtra,
   ): Promise<MetaPreview[]>;
+  /** The catalog's categories (with counts) for drill-down browsing. */
+  getCatalogGenres(
+    type: MediaType,
+    catalogId: string,
+  ): Promise<CatalogGenre[]>;
   getMeta(id: ContentId, type: MediaType): Promise<MetaDetail | null>;
   getStreams(id: ContentId, type: MediaType): Promise<PlayableSource[]>;
   getSubtitles(id: ContentId, type: MediaType): Promise<SubtitleTrack[]>;

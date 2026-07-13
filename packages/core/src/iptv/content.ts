@@ -43,6 +43,12 @@ export interface IptvSeries {
   episodes?: IptvEpisode[];
   /** Lazy loader (Xtream) — resolved on first meta/stream access, then cached. */
   loadEpisodes?: () => Promise<IptvEpisode[]>;
+  /**
+   * Serializable pointer used to rebuild `loadEpisodes` after a cache round-trip
+   * (the closure itself is dropped by JSON). Present for Xtream series; absent for
+   * M3U series, which carry eager `episodes`. See attachEpisodeLoaders in xtream.ts.
+   */
+  source?: { xtreamSeriesId: string };
 }
 
 export interface IptvContent {

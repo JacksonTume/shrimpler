@@ -156,6 +156,14 @@ export function PlaybackScreen({
       }),
       player.on("error", (p) => {
         if (p.error?.fatal === true) {
+          if (import.meta.env.DEV) {
+            console.warn(
+              "[playback] fatal",
+              p.error?.code,
+              p.error?.message,
+              { url: source.url, kind: source.kind },
+            );
+          }
           setError(labels.playbackError);
         }
       }),

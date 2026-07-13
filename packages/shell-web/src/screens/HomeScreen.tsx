@@ -171,7 +171,7 @@ export function HomeScreen({ onNavigate }: NavigationProps) {
             label={labels.liveTv}
             onPress={() =>
               onNavigate({
-                screen: "catalog",
+                screen: "categories",
                 catalogType: "tv",
                 catalogId: "iptv:live",
                 title: labels.liveTv,
@@ -183,7 +183,7 @@ export function HomeScreen({ onNavigate }: NavigationProps) {
             label={labels.moviesTitle}
             onPress={() =>
               onNavigate({
-                screen: "catalog",
+                screen: "categories",
                 catalogType: "movie",
                 catalogId: "iptv:movies",
                 title: labels.moviesTitle,
@@ -195,7 +195,7 @@ export function HomeScreen({ onNavigate }: NavigationProps) {
             label={labels.seriesTitle}
             onPress={() =>
               onNavigate({
-                screen: "catalog",
+                screen: "categories",
                 catalogType: "series",
                 catalogId: "iptv:series",
                 title: labels.seriesTitle,

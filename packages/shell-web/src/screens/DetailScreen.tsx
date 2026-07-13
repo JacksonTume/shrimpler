@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Detail screen (§4.2, §10 step 3): the first UI consumer of core.metadata.
 // Shows resolved MetaDetail (addon-meta-first, TMDB gap-fill — ADR-0003) and,
-// for series, the episode list grouped by season. Display-only for now: the
-// primary action (stream picker / playback) is a separate roadmap item, so
-// episode rows are focusable but inert. Copy routes through the labels module
-// (§9.2 / ADR-0007); focus follows the AddonManagerScreen conventions.
+// for series, the episode list grouped by season. The primary action opens the
+// stream picker: a single Play button for movies and live channels, and per-row
+// for series episodes. Copy routes through the labels module (§9.2 / ADR-0007);
+// focus follows the AddonManagerScreen conventions.
 
 import { useCallback, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
@@ -187,8 +187,11 @@ export function DetailScreen({ onNavigate, id, type }: DetailScreenProps) {
     [onNavigate, id, type, detail?.name, detail?.poster],
   );
 
+  // A single-source Play action for everything that isn't a series (movies and
+  // live channels). A series plays per-episode via the episodes list below.
+  const isDirectlyPlayable = type !== "series";
   const playButton = useFocusable<object, HTMLButtonElement>({
-    onEnterPress: () => openPicker(id, "movie"),
+    onEnterPress: () => openPicker(id, type),
   });
 
   const goHome = () => onNavigate({ screen: "home" });
@@ -245,12 +248,12 @@ export function DetailScreen({ onNavigate, id, type }: DetailScreenProps) {
               />
             )}
             {metaLine.length > 0 && <p>{metaLine.join(" · ")}</p>}
-            {type === "movie" && (
+            {isDirectlyPlayable && (
               <button
                 ref={playButton.ref}
                 type="button"
                 data-focused={playButton.focused}
-                onClick={() => openPicker(id, "movie")}
+                onClick={() => openPicker(id, type)}
                 style={focusOutline(playButton.focused)}
               >
                 {labels.play}

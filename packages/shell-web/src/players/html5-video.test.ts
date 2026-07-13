@@ -13,6 +13,12 @@ import type {
   HlsEngineOptions,
   HlsFactory,
 } from "./hls-engine";
+import type {
+  StreamEngine,
+  StreamEngineCallbacks,
+  StreamEngineFactory,
+  StreamEngineOptions,
+} from "./stream-engine";
 
 function source(over: Partial<PlayableSource> = {}): PlayableSource {
   return { id: "s", kind: "vod", url: "https://dl/x.mp4", ...over };
@@ -56,6 +62,42 @@ function hlsAdapter(factory: HlsFactory): Html5VideoPlayerAdapter {
   return new Html5VideoPlayerAdapter({
     hlsFactory: factory,
     hlsSupported: () => true,
+  });
+}
+
+/** Same fake, typed for the generic stream engine, for the MPEG-TS path. */
+function fakeMpegts() {
+  const engine = {
+    loadedUrl: undefined as string | undefined,
+    attachedTo: undefined as HTMLVideoElement | undefined,
+    options: undefined as StreamEngineOptions | undefined,
+    callbacks: undefined as StreamEngineCallbacks | undefined,
+    destroyed: false,
+    load(
+      url: string,
+      video: HTMLVideoElement,
+      callbacks: StreamEngineCallbacks,
+    ): void {
+      engine.loadedUrl = url;
+      engine.attachedTo = video;
+      engine.callbacks = callbacks;
+    },
+    destroy(): void {
+      engine.destroyed = true;
+    },
+  };
+  const factory: StreamEngineFactory = (options) => {
+    engine.options = options;
+    return engine as StreamEngine;
+  };
+  return { engine, factory };
+}
+
+/** Build an adapter that routes MPEG-TS through the fake engine ("supported"). */
+function mpegtsAdapter(factory: StreamEngineFactory): Html5VideoPlayerAdapter {
+  return new Html5VideoPlayerAdapter({
+    mpegtsFactory: factory,
+    mpegtsSupported: () => true,
   });
 }
 
@@ -244,6 +286,73 @@ describe("Html5VideoPlayerAdapter", () => {
       const adapter = hlsAdapter(factory);
 
       void adapter.load(source({ url: "https://dl/movie.mp4" }));
+
+      expect(engine.loadedUrl).toBeUndefined();
+      expect(adapter.element.getAttribute("src")).toBe("https://dl/movie.mp4");
+    });
+  });
+
+  describe("MPEG-TS path", () => {
+    it("routes a raw .ts live source through the mpegts engine", async () => {
+      const { engine, factory } = fakeMpegts();
+      const adapter = mpegtsAdapter(factory);
+
+      const pending = adapter.load(
+        source({ kind: "live", url: "https://cdn/live/1.ts" }),
+      );
+
+      expect(engine.loadedUrl).toBe("https://cdn/live/1.ts");
+      expect(engine.attachedTo).toBe(adapter.element);
+      expect(engine.options?.isLive).toBe(true);
+      // Not the native path — no src assigned to the element.
+      expect(adapter.element.getAttribute("src")).toBeNull();
+
+      engine.callbacks?.onManifestParsed();
+      await expect(pending).resolves.toBeUndefined();
+    });
+
+    it("routes an extensionless live source through the mpegts engine", () => {
+      const { engine, factory } = fakeMpegts();
+      const adapter = mpegtsAdapter(factory);
+
+      void adapter.load(source({ kind: "live", url: "https://host/live/42" }));
+
+      expect(engine.loadedUrl).toBe("https://host/live/42");
+      expect(adapter.element.getAttribute("src")).toBeNull();
+    });
+
+    it("rejects the load and emits a fatal error on an unrecoverable ts error", async () => {
+      const { engine, factory } = fakeMpegts();
+      const adapter = mpegtsAdapter(factory);
+      const cb = vi.fn();
+      adapter.on("error", cb);
+
+      const pending = adapter.load(source({ kind: "live", url: "https://cdn/x.ts" }));
+      engine.callbacks?.onFatalError("mediaMSEError");
+
+      await expect(pending).rejects.toThrow(/mediaMSEError/);
+      expect(cb.mock.calls[0]![0]!.error).toMatchObject({
+        code: "MPEGTS_FATAL",
+        fatal: true,
+      });
+    });
+
+    it("destroys the mpegts engine on destroy", async () => {
+      const { engine, factory } = fakeMpegts();
+      const adapter = mpegtsAdapter(factory);
+      const pending = adapter.load(source({ kind: "live", url: "https://cdn/x.ts" }));
+      engine.callbacks?.onManifestParsed();
+      await pending;
+
+      adapter.destroy();
+      expect(engine.destroyed).toBe(true);
+    });
+
+    it("keeps the native path for a progressive VOD source (no ts engine)", () => {
+      const { engine, factory } = fakeMpegts();
+      const adapter = mpegtsAdapter(factory);
+
+      void adapter.load(source({ kind: "vod", url: "https://dl/movie.mp4" }));
 
       expect(engine.loadedUrl).toBeUndefined();
       expect(adapter.element.getAttribute("src")).toBe("https://dl/movie.mp4");

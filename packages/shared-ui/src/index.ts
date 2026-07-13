@@ -12,11 +12,23 @@ export type { UseAddonManagerResult } from "./viewmodels/index";
 export { useCatalog } from "./viewmodels/index";
 export type { UseCatalogResult } from "./viewmodels/index";
 
+export { useCatalogCategories } from "./viewmodels/index";
+export type {
+  UseCatalogCategoriesResult,
+  CatalogCategory,
+} from "./viewmodels/index";
+
+export { useCatalogPage } from "./viewmodels/index";
+export type { UseCatalogPageResult } from "./viewmodels/index";
+
 export { useIptvPlaylists } from "./viewmodels/index";
 export type { UseIptvPlaylistsResult } from "./viewmodels/index";
 
 export { useIptvXtream } from "./viewmodels/index";
 export type { UseIptvXtreamResult } from "./viewmodels/index";
+
+export { useIptvRefresh } from "./viewmodels/index";
+export type { UseIptvRefreshResult } from "./viewmodels/index";
 
 export { useDetail } from "./viewmodels/index";
 export type { UseDetailResult } from "./viewmodels/index";

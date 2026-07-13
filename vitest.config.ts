@@ -25,6 +25,15 @@ export default defineConfig({
           include: ["packages/shared-ui/src/**/*.test.{ts,tsx}"],
         },
       },
+      {
+        // RN shell: adapter/composition logic only (node env). Real RN component
+        // rendering needs a device/emulator and is out of scope for CI.
+        test: {
+          name: "shell-rn",
+          environment: "node",
+          include: ["packages/shell-rn/src/**/*.test.{ts,tsx}"],
+        },
+      },
     ],
   },
 });

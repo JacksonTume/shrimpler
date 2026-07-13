@@ -58,7 +58,9 @@ export function useCatalog(
     return () => {
       ignore = true;
     };
-  }, [addons, type, catalogId, extra]);
+    // Depend on extra's primitive fields, not the object: a caller passing a
+    // freshly-built { genre } each render must not trigger a refetch loop.
+  }, [addons, type, catalogId, extra?.search, extra?.genre, extra?.skip]);
 
   return { items, isLoading, error };
 }

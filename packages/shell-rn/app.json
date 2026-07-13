@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Shrimpler",
+    "slug": "shrimpler",
+    "version": "0.0.0",
+    "orientation": "default",
+    "platforms": ["android", "ios"],
+    "android": {
+      "package": "com.shrimpler.app"
+    },
+    "plugins": ["react-native-video"]
+  }
+}

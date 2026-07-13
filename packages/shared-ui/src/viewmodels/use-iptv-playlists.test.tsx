@@ -8,8 +8,8 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement } from "react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Core, StorageAdapter } from "@shrimpler/core";
-import { createIptvService } from "@shrimpler/core";
+import type { Core, HttpAdapter, StorageAdapter } from "@shrimpler/core";
+import { createIptvContentCache, createIptvService } from "@shrimpler/core";
 import { CoreProvider } from "../context/core-context";
 import { labels } from "../labels/index";
 import { useIptvPlaylists } from "./use-iptv-playlists";
@@ -36,9 +36,20 @@ function memoryStorage(seed: Record<string, unknown> = {}): StorageAdapter {
   };
 }
 
+const stubHttp: HttpAdapter = {
+  get: () => Promise.reject(new Error("unused")),
+  post: () => Promise.reject(new Error("unused")),
+};
+
 function renderPlaylists(storage: StorageAdapter) {
   const reloadCore = vi.fn(() => Promise.resolve());
-  const core = { iptv: createIptvService({ storage }) } as unknown as Core;
+  const core = {
+    iptv: createIptvService({
+      storage,
+      http: stubHttp,
+      cache: createIptvContentCache({ storage }),
+    }),
+  } as unknown as Core;
   const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(CoreProvider, { core, children });
   const view = renderHook(() => useIptvPlaylists(reloadCore), { wrapper });

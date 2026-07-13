@@ -10,29 +10,21 @@
 // headers, a known web-only gap (RN honors them). Recoverable errors surface as
 // the contract's `reconnecting`.
 
+import type {
+  StreamEngine,
+  StreamEngineCallbacks,
+  StreamEngineFactory,
+  StreamEngineOptions,
+} from "./stream-engine";
+
 /** Instance type of hls.js, referenced type-only so hls.js stays out of the bundle. */
 type HlsInstance = InstanceType<typeof import("hls.js").default>;
 
-export interface HlsCallbacks {
-  /** The manifest parsed and media is ready — resolve the load. */
-  onManifestParsed(): void;
-  /** A recoverable error; the engine is retrying (maps to `reconnecting`). */
-  onReconnecting(): void;
-  /** An unrecoverable error; the load has failed. */
-  onFatalError(message: string): void;
-}
-
-export interface HlsEngine {
-  /** Attach to the element, load the url, and report lifecycle via callbacks. */
-  load(url: string, video: HTMLVideoElement, callbacks: HlsCallbacks): void;
-  destroy(): void;
-}
-
-export interface HlsEngineOptions {
-  headers?: Record<string, string>;
-}
-
-export type HlsFactory = (options: HlsEngineOptions) => HlsEngine;
+// Back-compat aliases: HLS is one implementation of the generic stream engine.
+export type HlsCallbacks = StreamEngineCallbacks;
+export type HlsEngine = StreamEngine;
+export type HlsEngineOptions = StreamEngineOptions;
+export type HlsFactory = StreamEngineFactory;
 
 /** Real hls.js-backed engine. Wrapped so the adapter stays hls.js-agnostic. */
 export function createHlsEngine(options: HlsEngineOptions): HlsEngine {
@@ -70,6 +62,13 @@ export function createHlsEngine(options: HlsEngineOptions): HlsEngine {
             callbacks.onManifestParsed(),
           );
           hls.on(Hls.Events.ERROR, (_event, data) => {
+            if (import.meta.env.DEV && data.fatal) {
+              console.warn("[hls] fatal error", {
+                type: data.type,
+                details: data.details,
+                url,
+              });
+            }
             if (!data.fatal) {
               return; // hls.js self-recovers from non-fatal errors
             }

@@ -94,7 +94,26 @@ describe("DetailScreen", () => {
     await waitFor(() => expect(screen.getByText("A Film")).toBeDefined());
     expect(screen.getByText("A quiet film.")).toBeDefined();
     expect(screen.getByText(`${labels.castTitle}: Alice, Bob`)).toBeDefined();
+    expect(screen.getByText(labels.play)).toBeDefined();
     expect(resolver.resolveEpisodes).not.toHaveBeenCalled();
+  });
+
+  it("offers a Play button for a live channel (type tv)", async () => {
+    const resolver = createResolver({
+      resolveDetail: vi.fn(() =>
+        Promise.resolve<MetaDetail>({
+          id: "iptv:live:x",
+          type: "tv",
+          name: "Channel X",
+          poster: "http://logo/x.png",
+        }),
+      ),
+    });
+    renderDetail({ resolver, id: "iptv:live:x", type: "tv" });
+
+    // The logo renders, and — unlike before — so does a way to actually play it.
+    await waitFor(() => expect(screen.getByText("Channel X")).toBeDefined());
+    expect(screen.getByText(labels.play)).toBeDefined();
   });
 
   it("lists series episodes and switches season", async () => {
@@ -117,6 +136,8 @@ describe("DetailScreen", () => {
     // Season 1 shown by default.
     await waitFor(() => expect(screen.getByText(/Pilot/)).toBeDefined());
     expect(screen.queryByText(/Return/)).toBeNull();
+    // A series plays per-episode, so there is no single Play button.
+    expect(screen.queryByText(labels.play)).toBeNull();
 
     // Switch to season 2.
     fireEvent.click(

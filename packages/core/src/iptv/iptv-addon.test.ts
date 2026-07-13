@@ -4,7 +4,7 @@
 // lazy loading, and kind (live vs vod). Plain Node, no I/O (§2.2).
 
 import { describe, expect, it, vi } from "vitest";
-import { createIptvAddon } from "./iptv-addon";
+import { createIptvAddon, CATALOG_PAGE_SIZE } from "./iptv-addon";
 import type { IptvContent } from "./content";
 
 const content: IptvContent = {
@@ -151,5 +151,66 @@ describe("createIptvAddon", () => {
     expect(await addon.getMeta("iptv:movie:nope", "movie")).toBeNull();
     expect(await addon.getStreams("iptv:live:nope", "tv")).toEqual([]);
     expect(await addon.getCatalog("movie", "iptv:live")).toEqual([]);
+  });
+
+  describe("categories", () => {
+    // Two News, one Sports, one grouped with only whitespace, one ungrouped.
+    const grouped: IptvContent = {
+      channels: [
+        { id: "n1", name: "N1", url: "http://h/n1", group: "News" },
+        { id: "s1", name: "S1", url: "http://h/s1", group: "Sports" },
+        { id: "n2", name: "N2", url: "http://h/n2", group: "News" },
+        { id: "u1", name: "U1", url: "http://h/u1" },
+        { id: "u2", name: "U2", url: "http://h/u2", group: "  " },
+      ],
+      movies: [],
+      series: [],
+    };
+
+    it("lists genres with counts, alpha-sorted, uncategorized last", async () => {
+      const addon = createIptvAddon(grouped);
+      expect(await addon.getCatalogGenres("tv", "iptv:live")).toEqual([
+        { name: "News", count: 2 },
+        { name: "Sports", count: 1 },
+        { name: "", count: 2 }, // u1 (no group) + u2 (whitespace only) fold here
+      ]);
+    });
+
+    it("returns [] genres for a mismatched type/catalog", async () => {
+      const addon = createIptvAddon(grouped);
+      expect(await addon.getCatalogGenres("movie", "iptv:live")).toEqual([]);
+    });
+
+    it("filters getCatalog by genre; undefined = all, '' = uncategorized", async () => {
+      const addon = createIptvAddon(grouped);
+      expect(await addon.getCatalog("tv", "iptv:live")).toHaveLength(5);
+      const news = await addon.getCatalog("tv", "iptv:live", { genre: "News" });
+      expect(news.map((p) => p.id)).toEqual(["iptv:live:n1", "iptv:live:n2"]);
+      const uncat = await addon.getCatalog("tv", "iptv:live", { genre: "" });
+      expect(uncat.map((p) => p.id)).toEqual(["iptv:live:u1", "iptv:live:u2"]);
+    });
+
+    it("pages a large category via extra.skip", async () => {
+      const many = CATALOG_PAGE_SIZE + 30;
+      const addon = createIptvAddon({
+        channels: Array.from({ length: many }, (_, i) => ({
+          id: `c${i}`,
+          name: `C${i}`,
+          url: `http://h/${i}`,
+          group: "Big",
+        })),
+        movies: [],
+        series: [],
+      });
+      const page1 = await addon.getCatalog("tv", "iptv:live", { genre: "Big" });
+      expect(page1).toHaveLength(CATALOG_PAGE_SIZE);
+      expect(page1[0]?.id).toBe("iptv:live:c0");
+      const page2 = await addon.getCatalog("tv", "iptv:live", {
+        genre: "Big",
+        skip: CATALOG_PAGE_SIZE,
+      });
+      expect(page2).toHaveLength(30);
+      expect(page2[0]?.id).toBe(`iptv:live:c${CATALOG_PAGE_SIZE}`);
+    });
   });
 });

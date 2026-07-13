@@ -6,7 +6,12 @@
 
 import { describe, expect, it } from "vitest";
 import type { HttpAdapter, HttpResponse } from "../adapters/http";
-import { fetchXtreamContent } from "./xtream";
+import type { IptvContent } from "./content";
+import {
+  attachEpisodeLoaders,
+  fetchXtreamContent,
+  xtreamAccountKey,
+} from "./xtream";
 import type { XtreamAccount } from "./xtream";
 
 const ACCOUNT: XtreamAccount = {
@@ -180,5 +185,58 @@ describe("fetchXtreamContent", () => {
         accountKey: "xt0",
       }),
     ).rejects.toThrow(/Xtream request failed/);
+  });
+
+  it("records a serializable series pointer for cache rehydration", async () => {
+    const content = await fetchXtreamContent({
+      http: xtreamHttp({ series: [{ series_id: 3, name: "Show" }] }),
+      account: ACCOUNT,
+      accountKey: "xt0",
+    });
+    expect(content.series[0]?.source).toEqual({ xtreamSeriesId: "3" });
+  });
+});
+
+describe("xtreamAccountKey", () => {
+  it("is deterministic and independent of account order", () => {
+    const key = xtreamAccountKey(ACCOUNT);
+    expect(key).toMatch(/^xt-[a-z0-9]+$/);
+    expect(xtreamAccountKey({ ...ACCOUNT })).toBe(key);
+    // Trailing slash on the host is normalized to the same key.
+    expect(xtreamAccountKey({ ...ACCOUNT, host: "http://x:8080/" })).toBe(key);
+  });
+
+  it("differs by host or username", () => {
+    const key = xtreamAccountKey(ACCOUNT);
+    expect(xtreamAccountKey({ ...ACCOUNT, username: "v" })).not.toBe(key);
+    expect(xtreamAccountKey({ ...ACCOUNT, host: "http://y:8080" })).not.toBe(
+      key,
+    );
+  });
+});
+
+describe("attachEpisodeLoaders", () => {
+  it("rebuilds loadEpisodes from source.xtreamSeriesId on cached series", async () => {
+    // Simulate a snapshot read back from cache: the closure is gone, the pointer
+    // remains.
+    const cached: IptvContent = {
+      channels: [],
+      movies: [],
+      series: [{ id: "xt0-3", name: "Show", source: { xtreamSeriesId: "3" } }],
+    };
+    attachEpisodeLoaders(cached, {
+      http: xtreamHttp({
+        series_info: {
+          "3": { episodes: { "1": [{ id: 10, episode_num: 1, season: 1 }] } },
+        },
+      }),
+      account: ACCOUNT,
+    });
+    const loader = cached.series[0]?.loadEpisodes;
+    expect(typeof loader).toBe("function");
+    const episodes = await loader!();
+    expect(episodes).toEqual([
+      { season: 1, episode: 1, url: "http://x:8080/series/u/p/10.mp4" },
+    ]);
   });
 });

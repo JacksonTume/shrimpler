@@ -521,6 +521,42 @@ describe("internal addons (ADR-0006)", () => {
     expect(http.calls).toEqual([]);
   });
 
+  it("sum-merges catalog genres across internal addons, alpha-sorted", async () => {
+    const a = createIptvAddon(
+      {
+        channels: [
+          { id: "a1", name: "A1", url: "https://l/a1", group: "News" },
+          { id: "a2", name: "A2", url: "https://l/a2", group: "News" },
+          { id: "a3", name: "A3", url: "https://l/a3", group: "Sports" },
+        ],
+        movies: [],
+        series: [],
+      },
+      { id: "org.shrimpler.iptv.a" },
+    );
+    const b = createIptvAddon(
+      {
+        channels: [
+          { id: "b1", name: "B1", url: "https://l/b1", group: "News" },
+          { id: "b2", name: "B2", url: "https://l/b2", group: "Kids" },
+        ],
+        movies: [],
+        series: [],
+      },
+      { id: "org.shrimpler.iptv.b" },
+    );
+    const { engine } = await engineWith({}, { internalAddons: [a, b] });
+
+    // News: 2 (a) + 1 (b) = 3; Kids: 3? no — Kids has one. Alpha order.
+    expect(await engine.getCatalogGenres("tv", "iptv:live")).toEqual([
+      { name: "Kids", count: 1 },
+      { name: "News", count: 3 },
+      { name: "Sports", count: 1 },
+    ]);
+    // HTTP-only / mismatched catalogs contribute nothing.
+    expect(await engine.getCatalogGenres("movie", "iptv:movies")).toEqual([]);
+  });
+
   it("gates by type/idPrefix across mixed HTTP + internal addons", async () => {
     const { engine, http } = await engineWith(
       {

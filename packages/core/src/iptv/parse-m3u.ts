@@ -4,6 +4,8 @@
 // style of parseManifest (addon/manifest.ts): entries we can't use are dropped
 // rather than throwing, so one malformed line never sinks a whole playlist.
 
+import { hashString } from "../util/hash";
+
 /** One parsed channel from a playlist. `id` is a stable, colon-free token. */
 export interface Channel {
   id: string;
@@ -67,15 +69,6 @@ function applyHeaderDirective(
       // Malformed EXTHTTP JSON is ignored (lenient).
     }
   }
-}
-
-/** Deterministic djb2 hash → base36, for channels with no usable tvg-id. */
-function hashUrl(url: string): string {
-  let hash = 5381;
-  for (let i = 0; i < url.length; i += 1) {
-    hash = ((hash << 5) + hash + url.charCodeAt(i)) >>> 0;
-  }
-  return hash.toString(36);
 }
 
 /** Strip colons/whitespace so `iptv:<id>` never collides with parseId's :S:E. */
@@ -144,7 +137,7 @@ export function parseM3U(text: string): Channel[] {
     const base =
       pending.tvgId !== undefined && sanitizeId(pending.tvgId) !== ""
         ? sanitizeId(pending.tvgId)
-        : hashUrl(line);
+        : hashString(line);
     let id = base;
     let suffix = 2;
     while (usedIds.has(id)) {

@@ -14,4 +14,5 @@ export type {
   CatalogDef,
   InstalledAddon,
   CatalogExtra,
+  CatalogGenre,
 } from "./addon";

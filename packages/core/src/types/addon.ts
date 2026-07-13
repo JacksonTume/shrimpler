@@ -42,3 +42,11 @@ export interface CatalogExtra {
   skip?: number;
   genre?: string;
 }
+
+// A selectable category within a catalog, with how many items it holds. `name`
+// doubles as the filter key passed back as CatalogExtra.genre (an empty string
+// is the "uncategorized" bucket); display copy is a UI concern (neutrality).
+export interface CatalogGenre {
+  name: string;
+  count: number;
+}

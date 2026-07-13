@@ -61,10 +61,26 @@ not fully closed.
   metadata). `buildIptvAddon` merges them.
 - **Config = user-supplied sources, applied by rebuild.** M3U URLs
   (`settings:iptvPlaylists`) and Xtream accounts (`settings:iptvXtream`) are stored
-  locally (neutrality §14.3) and turned into the internal addon at core-build time;
-  applying a change re-runs `createCore` (`reloadCore`), mirroring the
-  TMDB-key/debrid-token pattern. Known cost: each rebuild re-fetches every source —
-  a parsed-content cache is deferred to the IndexedDB-storage increment.
+  locally (neutrality §14.3); applying a change re-runs `createCore` (`reloadCore`),
+  mirroring the TMDB-key/debrid-token pattern.
+- **Parsed-content cache + background refresh.** A full subscription can take
+  minutes to fetch + parse, so parsed `IptvContent` is persisted per source as a
+  snapshot (`iptv-cache.ts`, keys `cache/iptv/{meta,body}/<sourceKey>`; meta =
+  `{version, fetchedAt, sig}` read on every startup, body = the large content read
+  only at build). `buildIptvAddon` is **cache-only** (serves snapshots, never
+  fetches), so startup and `reloadCore` are instant. The network fetch lives in
+  `core.iptv.refresh()` (`refreshIptvSources`), run in the background by the
+  `useIptvRefresh` hook: it fetches each missing/stale source (staleness TTL,
+  default 6 h), updates snapshots, prunes removed sources, and reports whether
+  content changed so the shell rebuilds only when needed — the TTL makes the
+  post-reload refresh a no-op, terminating the cycle. On web the snapshot cache is
+  backed by IndexedDB (`IdbStorageAdapter`), since large catalogs overflow
+  localStorage's ~5 MB; it falls back to localStorage when IndexedDB is
+  unavailable. Xtream series regain their lazy `loadEpisodes` loaders after a
+  cache round-trip via `attachEpisodeLoaders` (the closure is dropped by
+  serialization; a serializable `source.xtreamSeriesId` pointer is kept). Xtream
+  `accountKey` is a deterministic hash of host+username (not the array index), so
+  content ids stay stable across account reordering.
 - **Live playback (increment 2).** HLS is played by hls.js, dynamically imported
   behind `Html5VideoPlayerAdapter`; recoverable errors surface as `reconnecting`.
   RN plays HLS natively. Web can't set `User-Agent`/`Referer` request headers

@@ -8,6 +8,7 @@ import type { HttpAdapter } from "../adapters/http";
 import type { StorageAdapter } from "../adapters/storage";
 import type {
   CatalogExtra,
+  CatalogGenre,
   InstalledAddon,
   ResourceName,
 } from "../types/addon";
@@ -75,6 +76,15 @@ export interface AddonEngineDeps {
 
 const STORAGE_KEY = "addons/installed";
 
+/** Real categories alphabetically (case-insensitive); the "" bucket sorts last. */
+function sortGenres(genres: CatalogGenre[]): CatalogGenre[] {
+  return [...genres].sort((a, b) => {
+    if (a.name === "") return 1;
+    if (b.name === "") return -1;
+    return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+  });
+}
+
 /** Dedup key for streams (§6.3): infoHash(+fileIdx) beats url; else unique. */
 function streamDedupKey(source: PlayableSource, fallback: number): string {
   if (source.infoHash !== undefined) {
@@ -104,6 +114,10 @@ interface AddonTarget {
     catalogId: string,
     extra?: CatalogExtra,
   ): Promise<MetaPreview[]>;
+  getCatalogGenres(
+    type: MediaType,
+    catalogId: string,
+  ): Promise<CatalogGenre[]>;
   getMeta(id: ContentId, type: MediaType): Promise<MetaDetail | null>;
   getStreams(id: ContentId, type: MediaType): Promise<PlayableSource[]>;
   getSubtitles(id: ContentId, type: MediaType): Promise<SubtitleTrack[]>;
@@ -150,6 +164,9 @@ export async function createAddonEngine(
         timeouts.catalogMs,
         extra,
       ),
+    // HTTP addons advertise genres via manifest extra.options (names only); the
+    // counts seam is internal-addon only, so remote targets contribute nothing.
+    getCatalogGenres: () => Promise.resolve([]),
     getMeta: (id, type) =>
       fetchMeta(http, addon.manifestUrl, type, id, timeouts.metaMs),
     getStreams: (id, type) =>
@@ -171,6 +188,8 @@ export async function createAddonEngine(
     manifestUrl: `internal:${addon.manifest.id}`,
     getCatalog: (type, catalogId, extra) =>
       addon.getCatalog(type, catalogId, extra),
+    getCatalogGenres: (type, catalogId) =>
+      addon.getCatalogGenres(type, catalogId),
     getMeta: (id, type) => addon.getMeta(id, type),
     getStreams: (id, type) => addon.getStreams(id, type),
     getSubtitles: (id, type) => addon.getSubtitles(id, type),
@@ -299,6 +318,32 @@ export async function createAddonEngine(
         }
       }
       return merged;
+    },
+
+    async getCatalogGenres(
+      type: MediaType,
+      catalogId: string,
+    ): Promise<CatalogGenre[]> {
+      const targets = serving("catalog", type).filter((target) =>
+        target.manifest.catalogs.some(
+          (c) => c.type === type && c.id === catalogId,
+        ),
+      );
+      const perAddon = await fanOut(
+        targets,
+        "catalog",
+        timeouts.catalogMs,
+        (target) => target.getCatalogGenres(type, catalogId),
+        [] as CatalogGenre[],
+      );
+      // Sum counts for same-named categories contributed by different addons.
+      const counts = new Map<string, number>();
+      for (const genre of perAddon.flat()) {
+        counts.set(genre.name, (counts.get(genre.name) ?? 0) + genre.count);
+      }
+      return sortGenres(
+        [...counts].map(([name, count]) => ({ name, count })),
+      );
     },
 
     async getMeta(id: ContentId, type: MediaType): Promise<MetaDetail | null> {

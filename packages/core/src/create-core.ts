@@ -14,7 +14,11 @@ import { createStreamService } from "./streams/index";
 import type { StreamService } from "./streams/index";
 import { createLibrary } from "./library/index";
 import type { Library } from "./library/index";
-import { buildIptvAddon, createIptvService } from "./iptv/index";
+import {
+  buildIptvAddon,
+  createIptvContentCache,
+  createIptvService,
+} from "./iptv/index";
 import type { IptvService } from "./iptv/index";
 import { createAddonEngine } from "./addon/index";
 import type {
@@ -26,6 +30,14 @@ import type {
 export interface CoreDependencies {
   storage: StorageAdapter;
   http: HttpAdapter;
+  /**
+   * Storage for the (potentially large, multi-MB) IPTV content-snapshot cache.
+   * Defaults to `storage`; on web the shell points this at IndexedDB so big
+   * catalogs don't hit localStorage's ~5 MB quota (ADR-0006, §7.2).
+   */
+  iptvCacheStorage?: StorageAdapter;
+  /** Injectable clock (default Date.now); threaded to the IPTV cache/refresh. */
+  now?: () => number;
   playerFactory?: () => PlayerAdapter;
   providers?: MetadataProvider[];
   /** Debrid resolver (§6.4, ADR-0013). Undefined until the shell supplies a
@@ -84,12 +96,18 @@ export interface Core {
  * on startup (see createAddonEngine); the returned Core has a ready engine.
  */
 export async function createCore(deps: CoreDependencies): Promise<Core> {
-  // Build the internal IPTV addon from persisted playlists (undefined when none)
-  // and inject it alongside HTTP addons (ADR-0006).
+  // IPTV content-snapshot cache (backed by iptvCacheStorage, or storage). The
+  // addon is built cache-only from persisted snapshots (instant, no network);
+  // the network fetch happens in core.iptv.refresh() in the background.
+  const iptvCache = createIptvContentCache({
+    storage: deps.iptvCacheStorage ?? deps.storage,
+    now: deps.now,
+    onError: deps.onError,
+  });
   const iptvAddon = await buildIptvAddon({
     http: deps.http,
     storage: deps.storage,
-    onError: deps.onError,
+    cache: iptvCache,
   });
   const addons = await createAddonEngine({
     http: deps.http,
@@ -110,7 +128,13 @@ export async function createCore(deps: CoreDependencies): Promise<Core> {
     debrid: deps.debrid,
   });
   const library = createLibrary({ storage: deps.storage });
-  const iptv = createIptvService({ storage: deps.storage });
+  const iptv = createIptvService({
+    storage: deps.storage,
+    http: deps.http,
+    cache: iptvCache,
+    now: deps.now,
+    onError: deps.onError,
+  });
   return {
     adapters: {
       storage: deps.storage,

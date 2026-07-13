@@ -22,6 +22,7 @@ export type {
   CatalogDef,
   InstalledAddon,
   CatalogExtra,
+  CatalogGenre,
 } from "./types/index";
 
 export type {
@@ -65,11 +66,16 @@ export {
   parseM3U,
   classifyM3U,
   createIptvAddon,
+  CATALOG_PAGE_SIZE,
   buildIptvAddon,
   createIptvService,
+  createIptvContentCache,
+  refreshIptvSources,
   fetchXtreamContent,
+  xtreamAccountKey,
   emptyIptvContent,
   mergeIptvContent,
+  DEFAULT_IPTV_STALE_TTL_MS,
   IPTV_PLAYLISTS_STORAGE_KEY,
   IPTV_XTREAM_STORAGE_KEY,
 } from "./iptv/index";
@@ -82,6 +88,10 @@ export type {
   IptvMovie,
   IptvSeries,
   IptvEpisode,
+  IptvContentCache,
+  RefreshIptvOptions,
+  IptvRefreshProgress,
+  IptvRefreshPhase,
   XtreamAccount,
 } from "./iptv/index";
 export {

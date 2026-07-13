@@ -1,0 +1,24 @@
+{
+  "name": "@shrimpler/shell-rn",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.1.0",
+    "@shrimpler/core": "workspace:*",
+    "@shrimpler/shared-ui": "workspace:*",
+    "expo": "^53.0.0",
+    "react": "^19.0.0",
+    "react-native": "^0.79.0",
+    "react-native-video": "^6.10.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0"
+  }
+}

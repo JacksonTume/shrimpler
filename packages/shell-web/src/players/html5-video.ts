@@ -8,10 +8,10 @@
 //   `behaviorHints.notWebReady` sources emit a non-fatal warning but are still
 //   attempted (a native fallback on Tizen/webOS is Phase 3).
 // - VOD debrid links are progressive MP4/MKV, which native <video> handles.
-//   HLS is only used where the browser supports it natively (Safari); hls.js is
-//   deferred to the live/IPTV work (Phase 2), and slots in behind this adapter.
-// - kind:'live' reconnect logic would live HERE (core only observes
-//   'reconnecting'); v1 is VOD-only, so it is not implemented yet.
+// - Live/IPTV: HLS (.m3u8) plays via hls.js (native on Safari), and raw
+//   MPEG-TS/FLV via mpegts.js — both behind the StreamEngine seam (stream-engine
+//   .ts), MSE-based, dynamically imported, chosen per-source by `engineFor`.
+//   Recoverable stalls surface to core as 'reconnecting'.
 
 import type {
   PlayableSource,
@@ -22,8 +22,9 @@ import type {
   PlayerState,
   TrackInfo,
 } from "@shrimpler/core";
-import type { HlsEngine, HlsFactory } from "./hls-engine";
+import type { StreamEngine, StreamEngineFactory } from "./stream-engine";
 import { createHlsEngine, hlsSupported } from "./hls-engine";
+import { createMpegtsEngine, mpegtsSupported } from "./mpegts-engine";
 
 /** Buffered seconds ahead of (or covering) the current position; 0 if unknown. */
 function bufferedAhead(video: HTMLVideoElement): number {
@@ -81,18 +82,24 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
   private readonly domHandlers: Array<[string, EventListener]> = [];
   private state: PlayerState = { ...IDLE_STATE };
   private hasSource = false;
-  /** Active hls.js engine for the current HLS source, else null. */
-  private hls: HlsEngine | null = null;
-  private readonly hlsFactory: HlsFactory;
+  /** Active MSE engine (hls.js or mpegts.js) for the current source, else null. */
+  private engine: StreamEngine | null = null;
+  private readonly hlsFactory: StreamEngineFactory;
   private readonly isHlsSupported: () => boolean;
+  private readonly mpegtsFactory: StreamEngineFactory;
+  private readonly isMpegtsSupported: () => boolean;
 
   constructor(deps?: {
-    /** Injectable for tests (jsdom can't run MSE); defaults to real hls.js. */
-    hlsFactory?: HlsFactory;
+    /** Injectable for tests (jsdom can't run MSE); default to the real engines. */
+    hlsFactory?: StreamEngineFactory;
     hlsSupported?: () => boolean;
+    mpegtsFactory?: StreamEngineFactory;
+    mpegtsSupported?: () => boolean;
   }) {
     this.hlsFactory = deps?.hlsFactory ?? createHlsEngine;
     this.isHlsSupported = deps?.hlsSupported ?? hlsSupported;
+    this.mpegtsFactory = deps?.mpegtsFactory ?? createMpegtsEngine;
+    this.isMpegtsSupported = deps?.mpegtsSupported ?? mpegtsSupported;
     this.video = document.createElement("video");
     this.video.preload = "metadata";
     this.video.playsInline = true;
@@ -208,22 +215,31 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
   }
 
   /**
-   * HLS (.m3u8) needs hls.js unless the browser plays it natively (Safari/iOS).
-   * Raw MPEG-TS (.ts) live is not covered (would need mpegts.js) — a known gap.
+   * Pick the playback path for a source:
+   * - `hls`    — .m3u8, unless the browser plays HLS natively (Safari/iOS).
+   * - `mpegts` — raw MPEG-TS/FLV (.ts/.flv), or a kind:'live' source with no VOD
+   *   extension (Xtream live is .m3u8 and caught above; M3U live is often .ts).
+   * - `native` — progressive files, or HLS on browsers with native support.
    */
-  private shouldUseHls(url: string): boolean {
-    if (!/\.m3u8(\?|#|$)/i.test(url)) {
-      return false;
+  private engineFor(source: PlayableSource): "hls" | "mpegts" | "native" {
+    const url = source.url ?? "";
+    // HLS: prefer hls.js wherever MSE runs (Chrome/Firefox/Edge/desktop Safari) —
+    // it is more robust and, unlike native <video>, reports *why* a load fails.
+    // Native HLS is the fallback only where hls.js can't run (older iOS Safari,
+    // where native <video> plays HLS and needs no CORS).
+    if (/\.m3u8(\?|#|$)/i.test(url)) {
+      // hls.js when MSE runs; otherwise native <video> (iOS Safari plays HLS).
+      return this.isHlsSupported() ? "hls" : "native";
     }
-    const nativeHls =
-      this.video.canPlayType("application/vnd.apple.mpegurl") !== "";
-    return !nativeHls && this.isHlsSupported();
+    const tsLike =
+      /\.(ts|flv|m2ts|mts)(\?|#|$)/i.test(url) || source.kind === "live";
+    return tsLike && this.isMpegtsSupported() ? "mpegts" : "native";
   }
 
-  private destroyHls(): void {
-    if (this.hls !== null) {
-      this.hls.destroy();
-      this.hls = null;
+  private destroyEngine(): void {
+    if (this.engine !== null) {
+      this.engine.destroy();
+      this.engine = null;
     }
   }
 
@@ -234,8 +250,8 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
       );
     }
     const url = source.url;
-    // A prior HLS engine must be torn down before a new source loads.
-    this.destroyHls();
+    // A prior MSE engine must be torn down before a new source loads.
+    this.destroyEngine();
 
     return new Promise<void>((resolve, reject) => {
       if (source.behaviorHints?.notWebReady === true) {
@@ -252,12 +268,28 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
       this.hasSource = true;
       this.emit("statuschange", { status: "loading" });
 
-      if (this.shouldUseHls(url)) {
-        // hls.js drives the same <video> element, so the DOM handlers attached
-        // in the constructor (timeupdate/ended/…) keep working; only load
-        // lifecycle + reconnect come through the engine callbacks.
-        this.hls = this.hlsFactory({ headers: source.headers });
-        this.hls.load(url, this.video, {
+      const engineKind = this.engineFor(source);
+      if (import.meta.env.DEV) {
+        console.info("[player] load", {
+          engine: engineKind,
+          kind: source.kind,
+          url,
+          hlsSupported: this.isHlsSupported(),
+          mpegtsSupported: this.isMpegtsSupported(),
+        });
+      }
+      if (engineKind !== "native") {
+        // The engine drives the same <video> element, so the DOM handlers
+        // attached in the constructor (timeupdate/ended/…) keep working; only
+        // load lifecycle + reconnect come through the engine callbacks.
+        const factory =
+          engineKind === "hls" ? this.hlsFactory : this.mpegtsFactory;
+        const fatalCode = engineKind === "hls" ? "HLS_FATAL" : "MPEGTS_FATAL";
+        this.engine = factory({
+          headers: source.headers,
+          isLive: source.kind === "live",
+        });
+        this.engine.load(url, this.video, {
           onManifestParsed: () => {
             this.syncStatus();
             resolve();
@@ -267,7 +299,7 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
           onFatalError: (message) => {
             this.emit("error", {
               status: "error",
-              error: { code: "HLS_FATAL", message, fatal: true },
+              error: { code: fatalCode, message, fatal: true },
             });
             reject(new Error(`Html5VideoPlayerAdapter.load: ${message}`));
           },
@@ -310,7 +342,7 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
   }
 
   stop(): void {
-    this.destroyHls();
+    this.destroyEngine();
     this.video.pause();
     this.video.removeAttribute("src");
     this.video.load();
@@ -362,7 +394,7 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
   }
 
   destroy(): void {
-    this.destroyHls();
+    this.destroyEngine();
     for (const [name, fn] of this.domHandlers) {
       this.video.removeEventListener(name, fn);
     }
