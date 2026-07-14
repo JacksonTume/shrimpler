@@ -19,6 +19,7 @@ import type {
   StreamEngineFactory,
   StreamEngineOptions,
 } from "./stream-engine";
+import { proxyStreamUrl } from "./hls-proxy";
 
 function source(over: Partial<PlayableSource> = {}): PlayableSource {
   return { id: "s", kind: "vod", url: "https://dl/x.mp4", ...over };
@@ -229,7 +230,8 @@ describe("Html5VideoPlayerAdapter", () => {
         }),
       );
 
-      expect(engine.loadedUrl).toBe("https://cdn/live.m3u8");
+      // In dev the engine url is routed through the CORS proxy (hls-proxy.ts).
+      expect(engine.loadedUrl).toBe(proxyStreamUrl("https://cdn/live.m3u8"));
       expect(engine.attachedTo).toBe(adapter.element);
       expect(engine.options?.headers).toEqual({ Referer: "http://r/" });
       // The native path was not used — no src assigned to the element.
@@ -301,7 +303,7 @@ describe("Html5VideoPlayerAdapter", () => {
         source({ kind: "live", url: "https://cdn/live/1.ts" }),
       );
 
-      expect(engine.loadedUrl).toBe("https://cdn/live/1.ts");
+      expect(engine.loadedUrl).toBe(proxyStreamUrl("https://cdn/live/1.ts"));
       expect(engine.attachedTo).toBe(adapter.element);
       expect(engine.options?.isLive).toBe(true);
       // Not the native path — no src assigned to the element.
@@ -317,7 +319,7 @@ describe("Html5VideoPlayerAdapter", () => {
 
       void adapter.load(source({ kind: "live", url: "https://host/live/42" }));
 
-      expect(engine.loadedUrl).toBe("https://host/live/42");
+      expect(engine.loadedUrl).toBe(proxyStreamUrl("https://host/live/42"));
       expect(adapter.element.getAttribute("src")).toBeNull();
     });
 

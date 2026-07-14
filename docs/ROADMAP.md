@@ -110,6 +110,20 @@ Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
       (`classify-m3u.ts`) and an Xtream Codes client (`xtream.ts`,
       `player_api.php`, lazy series episodes), with a generic web catalog screen
       (Live TV / Movies / Series) + an Xtream account form
+- [x] Category browse + web live playback that actually works — drill-down
+      category lists (`getCatalogGenres`, `useCatalogCategories`/`useCatalogPage`)
+      so 10k-channel sources stay navigable; hash-based deep-link routing
+      (`route-url.ts`); a Play action for live channels; Xtream live via raw
+      MPEG-TS (`.ts` → mpegts.js, matching native players — the `.m3u8` HLS
+      wrapper often serves a black placeholder); a **dev-only** Vite CORS proxy
+      (`vite-plugin-iptv-proxy.ts`) since IPTV hosts omit `Access-Control-Allow-
+      Origin`; and a muted-autoplay fallback
+- [ ] **Live playback performance** — web live is playable but **choppy**;
+      needs work. Levers: mpegts.js live buffering/latency config
+      (`stashInitialSize`, `liveBufferLatencyChasing`/`liveSync`, worker), the dev
+      CORS proxy adds latency + copies (a production/native path avoids it — the
+      RN shell has no CORS wall), and the muted-autoplay stream needs an unmute
+      control. Web-only concern; not started
 - [ ] `packages/shell-rn` — Expo (dev client), Android-first: `StorageAdapter`
       (AsyncStorage/MMKV), `HttpAdapter` (fetch), `PlayerAdapter`
       (`react-native-video` — plays HLS natively + honors headers), composition

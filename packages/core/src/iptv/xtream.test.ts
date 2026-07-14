@@ -98,7 +98,7 @@ describe("fetchXtreamContent", () => {
       {
         id: "xt0-1",
         name: "Ch",
-        url: "http://x:8080/live/u/p/1.m3u8",
+        url: "http://x:8080/live/u/p/1.ts",
         logo: "i",
       },
     ]);
@@ -174,7 +174,7 @@ describe("fetchXtreamContent", () => {
       account: { ...ACCOUNT, host: "http://x:8080/" },
       accountKey: "xt0",
     });
-    expect(content.channels[0]?.url).toBe("http://x:8080/live/u/p/1.m3u8");
+    expect(content.channels[0]?.url).toBe("http://x:8080/live/u/p/1.ts");
   });
 
   it("throws when a required endpoint fails (account-level isolation)", async () => {

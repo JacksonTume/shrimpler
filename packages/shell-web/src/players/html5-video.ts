@@ -25,6 +25,7 @@ import type {
 import type { StreamEngine, StreamEngineFactory } from "./stream-engine";
 import { createHlsEngine, hlsSupported } from "./hls-engine";
 import { createMpegtsEngine, mpegtsSupported } from "./mpegts-engine";
+import { proxyStreamUrl } from "./hls-proxy";
 
 /** Buffered seconds ahead of (or covering) the current position; 0 if unknown. */
 function bufferedAhead(video: HTMLVideoElement): number {
@@ -282,6 +283,10 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
         // The engine drives the same <video> element, so the DOM handlers
         // attached in the constructor (timeupdate/ended/…) keep working; only
         // load lifecycle + reconnect come through the engine callbacks.
+        // hls.js/mpegts.js fetch via XHR, so IPTV's missing CORS headers block
+        // them; in dev, route through the local proxy (native <video> below is
+        // CORS-exempt and needs no proxy). See hls-proxy.ts.
+        const engineUrl = import.meta.env.DEV ? proxyStreamUrl(url) : url;
         const factory =
           engineKind === "hls" ? this.hlsFactory : this.mpegtsFactory;
         const fatalCode = engineKind === "hls" ? "HLS_FATAL" : "MPEGTS_FATAL";
@@ -289,7 +294,7 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
           headers: source.headers,
           isLive: source.kind === "live",
         });
-        this.engine.load(url, this.video, {
+        this.engine.load(engineUrl, this.video, {
           onManifestParsed: () => {
             this.syncStatus();
             resolve();
@@ -329,7 +334,14 @@ export class Html5VideoPlayerAdapter implements PlayerAdapter {
 
   play(): void {
     void this.video.play().catch(() => {
-      // Autoplay rejection (e.g. gesture policy) — the UI can offer a play button.
+      // Autoplay policy blocked an unmuted start — common for live, which begins
+      // playing without a fresh user gesture. Retry muted (always permitted) so
+      // the picture appears (and mpegts.js's stall-jumper can seek to the live
+      // edge); the UI can then offer an unmute control.
+      this.video.muted = true;
+      void this.video.play().catch(() => {
+        // Still blocked — the on-screen Play button (a direct gesture) starts it.
+      });
     });
   }
 

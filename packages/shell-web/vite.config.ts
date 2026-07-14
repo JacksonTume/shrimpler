@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import { iptvProxyPlugin } from "./vite-plugin-iptv-proxy";
 
 // No aliases needed: pnpm workspace resolution maps @shrimpler/* to package
 // source via their "exports" fields.
 export default defineConfig({
-  plugins: [react()],
+  // iptvProxyPlugin is dev-only (apply: "serve") — see vite-plugin-iptv-proxy.ts.
+  plugins: [react(), iptvProxyPlugin()],
   build: {
     // hls.js (~0.5 MB) is dynamically imported into its own chunk and fetched
     // only when a live stream plays (see players/hls-engine.ts), so its size is
