@@ -6,7 +6,7 @@ honest — this file is the entry point for anyone (human or agent) picking up
 work. Architectural decisions live in [adr/](adr/README.md); do not re-litigate
 them here.
 
-_Last updated: 2026-07-09_
+_Last updated: 2026-07-16_
 
 ## Phase 0 — Foundations ✅ complete
 
@@ -129,9 +129,20 @@ Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
       (`react-native-video` — plays HLS natively + honors headers), composition
       root, screens reusing every `shared-ui` hook. Reaches VOD + IPTV parity
       on mobile
-- [ ] EPG pipeline (streaming XMLTV parse, tvg-id matching) + guide UI
-- [ ] IndexedDB `StorageAdapter` for web (EPG/cache scale, spec §7.2; also
-      caches parsed channels to drop the re-parse-on-reload cost)
+- [x] EPG pipeline (streaming XMLTV parse, tvg-id matching), increment 1 —
+      `HttpAdapter.getTextStream` streaming seam (gzip in the shell, DOM-less
+      core), `core/src/epg` (incremental parser, tvg-id + fuzzy match,
+      UTC-normalized now/next+grid model, snapshot cache reusing IndexedDB),
+      `core.epg` (background stale-while-revalidate refresh; Xtream `xmltv.php`
+      + M3U `url-tvg` source discovery), and now/next strips on live channel
+      rows (`useNowNext`) (ADR-0015, 2026-07-16). **Deferred: the dedicated
+      timeline "TV Guide" grid screen.**
+- [x] IndexedDB `StorageAdapter` for web (spec §7.2) — `IdbStorageAdapter`
+      (JSON-string KV over IndexedDB, localStorage fallback) backs the large
+      IPTV content-snapshot cache and the EPG cache; the parsed-channel snapshot
+      cache (`iptv-cache.ts`) already drops the re-parse-on-reload cost. Small
+      config stays in localStorage (the §7.2 large-IDB / small-localStorage
+      split)
 
 ## Phase 3 — Breadth & polish
 

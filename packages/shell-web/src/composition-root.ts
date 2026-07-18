@@ -90,6 +90,68 @@ class FetchHttpAdapter implements HttpAdapter {
     return this.request(url, init, opts);
   }
 
+  // §8.2 — stream a body as decoded UTF-8 text chunks so core can parse a large
+  // XMLTV EPG incrementally. Inflates a `.gz` file body here (the browser only
+  // auto-decodes Content-Encoding, not a gzipped *file*); Content-Encoding gzip is
+  // already handled by fetch. Breaking out of the consumer's loop cancels the
+  // reader, which aborts the fetch.
+  async *getTextStream(url: string, opts?: HttpOpts): AsyncIterable<string> {
+    const controller = new AbortController();
+    const timer =
+      opts?.timeoutMs !== undefined
+        ? setTimeout(() => controller.abort(), opts.timeoutMs)
+        : undefined;
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: opts?.headers,
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        throw new Error(`Request failed (${response.status})`);
+      }
+      if (response.body === null) {
+        const text = await response.text();
+        if (text !== "") yield text;
+        return;
+      }
+      const contentType = response.headers.get("content-type") ?? "";
+      const isGzipFile = /\.gz(\?|#|$)/i.test(url) || /gzip/i.test(contentType);
+      // TS's lib types declare DecompressionStream/TextDecoderStream with a
+      // WritableStream<BufferSource>, which doesn't unify with
+      // ReadableStream<Uint8Array> under pipeThrough (a known lib gap) — cast each
+      // transform to the pair type it actually behaves as.
+      let bytes: ReadableStream<Uint8Array> = response.body;
+      if (isGzipFile && typeof DecompressionStream !== "undefined") {
+        bytes = bytes.pipeThrough(
+          new DecompressionStream("gzip") as unknown as ReadableWritablePair<
+            Uint8Array,
+            Uint8Array
+          >,
+        );
+      }
+      const reader = bytes
+        .pipeThrough(
+          new TextDecoderStream() as unknown as ReadableWritablePair<
+            string,
+            Uint8Array
+          >,
+        )
+        .getReader();
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value !== undefined && value !== "") yield value;
+        }
+      } finally {
+        await reader.cancel().catch(() => undefined);
+      }
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
+    }
+  }
+
   private async request(
     url: string,
     init: RequestInit & { headers?: Record<string, string> },

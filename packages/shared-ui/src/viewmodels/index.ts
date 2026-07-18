@@ -27,6 +27,9 @@ export type { UseIptvXtreamResult } from "./use-iptv-xtream";
 export { useIptvRefresh } from "./use-iptv-refresh";
 export type { UseIptvRefreshResult } from "./use-iptv-refresh";
 
+export { useNowNext } from "./use-channel-epg";
+export type { UseNowNextResult } from "./use-channel-epg";
+
 export { useDetail } from "./use-detail";
 export type { UseDetailResult } from "./use-detail";
 

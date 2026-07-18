@@ -5,6 +5,19 @@
 export interface HttpAdapter {
   get(url: string, opts?: HttpOpts): Promise<HttpResponse>;
   post(url: string, body: unknown, opts?: HttpOpts): Promise<HttpResponse>;
+  /**
+   * Stream a GET response body as decoded UTF-8 text chunks (§8.2). Lets a caller
+   * parse a large document (e.g. an XMLTV EPG, often tens of MB and gzipped)
+   * incrementally instead of buffering the whole thing in memory. The adapter
+   * handles transport concerns transparently: gzip (both `Content-Encoding: gzip`
+   * and a `.gz` file body) and text decoding. Rejects before the first chunk on a
+   * non-ok response. Breaking out of the iteration aborts the underlying request.
+   *
+   * Optional: a shell without streaming support omits it, and callers fall back to
+   * `get().text()`. Kept as an `AsyncIterable<string>` (a plain ES type) so no
+   * web-stream types leak into the DOM-less core (ADR-0001).
+   */
+  getTextStream?(url: string, opts?: HttpOpts): AsyncIterable<string>;
 }
 
 export interface HttpOpts {

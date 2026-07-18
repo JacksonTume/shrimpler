@@ -108,6 +108,27 @@ export type {
   FeedOpts,
   CatalogRow,
 } from "./metadata/index";
+export {
+  createEpgService,
+  createEpgCache,
+  listEpgSources,
+  parseXmltvStream,
+  parseXmltvTime,
+  matchChannels,
+  normalizeName,
+  DEFAULT_EPG_STALE_TTL_MS,
+  EPG_SNAPSHOT_VERSION,
+} from "./epg/index";
+export type {
+  EpgService,
+  EpgSource,
+  EpgProgramme,
+  NowNext,
+  EpgSnapshotBody,
+  EpgCache,
+  XmltvChannel,
+  XmltvProgramme,
+} from "./epg/index";
 export { createTtlCache } from "./cache";
 export type { TtlCache, TtlCacheDeps } from "./cache";
 export type { DebridProvider } from "./debrid/index";

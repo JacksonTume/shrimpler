@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Spec §8 / ADR-0006 — IPTV as an internal addon: M3U/M3U8 parser, addon
 // builder, and playlist config. Xtream Codes + EPG are later Phase 2 increments.
-export { parseM3U } from "./parse-m3u";
+export { parseM3U, parseM3UEpgUrl } from "./parse-m3u";
 export type { Channel } from "./parse-m3u";
 export { createIptvAddon, CATALOG_PAGE_SIZE } from "./iptv-addon";
 export type { IptvAddonOptions } from "./iptv-addon";

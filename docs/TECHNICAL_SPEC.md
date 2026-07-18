@@ -517,6 +517,10 @@ interface StorageAdapter {
 interface HttpAdapter {
   get(url: string, opts?: HttpOpts): Promise<HttpResponse>;
   post(url: string, body: unknown, opts?: HttpOpts): Promise<HttpResponse>;
+  // Optional: stream a body as decoded UTF-8 text chunks for incremental parse of
+  // a large document (XMLTV EPG, §8.2). Handles gzip; AsyncIterable keeps web-stream
+  // types out of the DOM-less core (ADR-0015). Callers fall back to get().text().
+  getTextStream?(url: string, opts?: HttpOpts): AsyncIterable<string>;
 }
 interface HttpOpts {
   headers?: Record<string, string>;

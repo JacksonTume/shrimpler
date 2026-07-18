@@ -77,6 +77,29 @@ function sanitizeId(raw: string): string {
 }
 
 /**
+ * Extract the EPG (XMLTV) source URL a playlist advertises on its `#EXTM3U`
+ * header via the `url-tvg` / `x-tvg-url` attribute (§8.2 EPG source discovery).
+ * Returns the first URL (some playlists comma-join several) or undefined. Cheap
+ * enough to run over just the head of a streamed playlist. Malformed → undefined.
+ */
+export function parseM3UEpgUrl(text: string): string | undefined {
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (line === "") continue;
+    if (!line.startsWith("#EXTM3U")) {
+      // The header is the first content line; once past it, give up.
+      return undefined;
+    }
+    const attrs = parseAttributes(line);
+    const raw = attrs["url-tvg"] ?? attrs["x-tvg-url"];
+    if (raw === undefined) return undefined;
+    const first = raw.split(",")[0]?.trim();
+    return first !== undefined && first !== "" ? first : undefined;
+  }
+  return undefined;
+}
+
+/**
  * Parse M3U/M3U8 text into channels. Recognizes `#EXTINF` attribute pairs
  * (tvg-id, tvg-name, tvg-logo, group-title), `#EXTGRP` group lines, and the
  * `#EXTVLCOPT`/`#EXTHTTP` header directives that sit between an `#EXTINF` and its

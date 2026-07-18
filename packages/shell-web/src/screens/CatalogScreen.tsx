@@ -11,8 +11,8 @@
 
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
-import { labels, useCatalogPage } from "@shrimpler/shared-ui";
-import type { MediaType, MetaPreview } from "@shrimpler/core";
+import { labels, useCatalogPage, useNowNext } from "@shrimpler/shared-ui";
+import type { MediaType, MetaPreview, NowNext } from "@shrimpler/core";
 import { FocusContext, setFocus, useBackHandler, useFocusable } from "../focus";
 import { BackButton } from "../components/BackButton";
 import type { Route } from "../navigation";
@@ -33,11 +33,74 @@ interface CatalogScreenProps {
   onNavigate: (route: Route) => void;
 }
 
+// Now/next strip under a live-channel card (§8.2, ADR-0015). Supplementary: absent
+// when the channel has no matched guide. The progress bar reflects how far into the
+// current programme we are (computed at render from the wall clock).
+function NowNextStrip({ nowNext }: { nowNext: NowNext }) {
+  const { now, next } = nowNext;
+  const at = Date.now();
+  const progress =
+    now !== undefined && now.stop > now.start
+      ? Math.min(1, Math.max(0, (at - now.start) / (now.stop - now.start)))
+      : 0;
+  const line: CSSProperties = {
+    display: "block",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    maxWidth: "100%",
+  };
+  return (
+    <span
+      style={{
+        display: "block",
+        marginTop: "0.25rem",
+        textAlign: "left",
+        fontSize: 11,
+        color: "#aaa",
+      }}
+    >
+      {now !== undefined && (
+        <>
+          <span style={line} title={now.title}>
+            {labels.epgNow}: {now.title}
+          </span>
+          <span
+            aria-hidden
+            style={{
+              display: "block",
+              height: 2,
+              marginTop: 2,
+              background: "#444",
+            }}
+          >
+            <span
+              style={{
+                display: "block",
+                height: "100%",
+                width: `${Math.round(progress * 100)}%`,
+                background: "#c33",
+              }}
+            />
+          </span>
+        </>
+      )}
+      {next !== undefined && (
+        <span style={{ ...line, marginTop: 2 }} title={next.title}>
+          {labels.epgNext}: {next.title}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function CatalogCard({
   item,
+  nowNext,
   onOpen,
 }: {
   item: MetaPreview;
+  nowNext?: NowNext;
   onOpen: (item: MetaPreview) => void;
 }) {
   const { ref, focused } = useFocusable<object, HTMLButtonElement>({
@@ -73,6 +136,7 @@ function CatalogCard({
       <span style={{ display: "block", marginTop: "0.25rem" }}>
         {item.name}
       </span>
+      {nowNext !== undefined && <NowNextStrip nowNext={nowNext} />}
     </button>
   );
 }
@@ -87,7 +151,11 @@ function LoadMoreButton({ onLoadMore }: { onLoadMore: () => void }) {
       type="button"
       data-focused={focused}
       onClick={onLoadMore}
-      style={{ ...focusOutline(focused), padding: "0.5rem 1rem", cursor: "pointer" }}
+      style={{
+        ...focusOutline(focused),
+        padding: "0.5rem 1rem",
+        cursor: "pointer",
+      }}
     >
       {labels.loadMore}
     </button>
@@ -104,6 +172,11 @@ export function CatalogScreen({
 }: CatalogScreenProps) {
   const { items, isLoading, isLoadingMore, hasMore, error, loadMore } =
     useCatalogPage(catalogType, catalogId, genre, total);
+  // now/next for the loaded live channels (§8.2, ADR-0015). No-op for VOD catalogs
+  // (no `tv` items → empty id set); the hook batches the whole visible page.
+  const { byId: epgById } = useNowNext(
+    items.filter((item) => item.type === "tv").map((item) => item.id),
+  );
   const { ref, focusKey } = useFocusable<object, HTMLElement>({
     focusKey: SCREEN_FOCUS_KEY,
     saveLastFocusedChild: true,
@@ -185,6 +258,7 @@ export function CatalogScreen({
               <CatalogCard
                 key={item.id}
                 item={item}
+                nowNext={epgById[item.id]}
                 onOpen={(picked) =>
                   onNavigate({
                     screen: "detail",

@@ -65,7 +65,14 @@ function renderCatalog(
   },
   onNavigate: (route: Route) => void = () => {},
 ) {
-  const core = { addons: engine } as unknown as Core;
+  // Minimal epg stub: the live-channel cards call useNowNext, which reads core.epg.
+  const core = {
+    addons: engine,
+    epg: {
+      getNowNext: () => Promise.resolve({}),
+      refresh: () => Promise.resolve({ changed: false }),
+    },
+  } as unknown as Core;
   return render(
     <CoreProvider core={core}>
       <CatalogScreen

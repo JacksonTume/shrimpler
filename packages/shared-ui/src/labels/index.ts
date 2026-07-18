@@ -123,6 +123,12 @@ export const labels = {
   // seek/resume; a transient stall shows "Reconnecting…" while hls.js recovers.
   live: "Live",
   reconnecting: "Reconnecting…",
+  // EPG now/next (§8.2, ADR-0015): current + next programme on a live channel
+  // card. Guide data is user-source-supplied (XMLTV); a channel with no matched
+  // programme simply shows nothing. Copy stays neutral and generic.
+  epgNow: "Now",
+  epgNext: "Next",
+  epgNoInfo: "No programme info",
 
   // Settings screen. TMDB is a metadata provider (presentation data only,
   // §5.1) — naming it is neutrality-safe; it is not a content source. The key

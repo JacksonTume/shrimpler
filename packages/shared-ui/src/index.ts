@@ -30,6 +30,9 @@ export type { UseIptvXtreamResult } from "./viewmodels/index";
 export { useIptvRefresh } from "./viewmodels/index";
 export type { UseIptvRefreshResult } from "./viewmodels/index";
 
+export { useNowNext } from "./viewmodels/index";
+export type { UseNowNextResult } from "./viewmodels/index";
+
 export { useDetail } from "./viewmodels/index";
 export type { UseDetailResult } from "./viewmodels/index";
 

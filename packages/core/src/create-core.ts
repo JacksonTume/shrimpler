@@ -20,6 +20,8 @@ import {
   createIptvService,
 } from "./iptv/index";
 import type { IptvService } from "./iptv/index";
+import { createEpgCache, createEpgService, listEpgSources } from "./epg/index";
+import type { EpgService } from "./epg/index";
 import { createAddonEngine } from "./addon/index";
 import type {
   AddonEngine,
@@ -89,6 +91,12 @@ export interface Core {
    * `core.addons`; applying a playlist change means rebuilding the core.
    */
   readonly iptv: IptvService;
+  /**
+   * EPG now/next for live channels (§8.2, ADR-0015). Guide sources are discovered
+   * from the configured IPTV sources (Xtream xmltv.php, M3U `url-tvg`); `refresh`
+   * fetches them in the background, `getNowNext` reads the cached snapshots.
+   */
+  readonly epg: EpgService;
 }
 
 /**
@@ -135,6 +143,20 @@ export async function createCore(deps: CoreDependencies): Promise<Core> {
     now: deps.now,
     onError: deps.onError,
   });
+  // EPG shares the IPTV cache storage (IndexedDB on web) and reads channels from
+  // the IPTV content snapshots the cache already holds — no playlist re-parse.
+  const epg = createEpgService({
+    http: deps.http,
+    cache: createEpgCache({
+      storage: deps.iptvCacheStorage ?? deps.storage,
+      now: deps.now,
+      onError: deps.onError,
+    }),
+    listSources: () =>
+      listEpgSources({ storage: deps.storage, iptvCache }),
+    now: deps.now,
+    onError: deps.onError,
+  });
   return {
     adapters: {
       storage: deps.storage,
@@ -148,5 +170,6 @@ export async function createCore(deps: CoreDependencies): Promise<Core> {
     streams,
     library,
     iptv,
+    epg,
   };
 }
