@@ -6,7 +6,7 @@ honest — this file is the entry point for anyone (human or agent) picking up
 work. Architectural decisions live in [adr/](adr/README.md); do not re-litigate
 them here.
 
-_Last updated: 2026-07-16_
+_Last updated: 2026-07-18_
 
 ## Phase 0 — Foundations ✅ complete
 
@@ -119,15 +119,20 @@ Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
       (`vite-plugin-iptv-proxy.ts`) since IPTV hosts omit `Access-Control-Allow-
       Origin`; and a muted-autoplay fallback
 - [ ] **Live playback performance** — web live is playable but **choppy**;
-      needs work. Levers: mpegts.js live buffering/latency config
-      (`stashInitialSize`, `liveBufferLatencyChasing`/`liveSync`, worker), the dev
-      CORS proxy adds latency + copies (a production/native path avoids it — the
-      RN shell has no CORS wall), and the muted-autoplay stream needs an unmute
-      control. Web-only concern; not started
-- [ ] `packages/shell-rn` — Expo (dev client), Android-first: `StorageAdapter`
-      (AsyncStorage/MMKV), `HttpAdapter` (fetch), `PlayerAdapter`
-      (`react-native-video` — plays HLS natively + honors headers), composition
-      root, screens reusing every `shared-ui` hook. Reaches VOD + IPTV parity
+      needs work. Baseline tuning already exists (`mpegts-engine.ts` sets
+      `enableStashBuffer: !isLive` + `liveBufferLatencyChasing: isLive`, and
+      `html5-video.ts` has a muted-autoplay fallback). Remaining levers:
+      `stashInitialSize`/`liveSync`/worker on mpegts.js; the dev CORS proxy adds
+      latency + copies (a production/native path avoids it — the RN shell has no
+      CORS wall); and the muted-autoplay stream still needs an unmute control.
+      Web-only concern
+- [ ] `packages/shell-rn` — Expo (dev client), Android-first. **Next up.**
+      Landed (committed): all three adapters — `StorageAdapter` (AsyncStorage),
+      `HttpAdapter` (fetch), `PlayerAdapter` (`react-native-video`, native HLS +
+      honors headers) — each tested; the `createRnCore` composition root; the
+      navigation route union; and `HomeScreen`. Remaining: the `search`, `detail`,
+      `catalog`, `player`, `settings`, and `addons` screens (reusing every
+      `shared-ui` hook) plus the `App.tsx` route stack, to reach VOD + IPTV parity
       on mobile
 - [x] EPG pipeline (streaming XMLTV parse, tvg-id matching), increment 1 —
       `HttpAdapter.getTextStream` streaming seam (gzip in the shell, DOM-less
@@ -143,6 +148,21 @@ Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
       cache (`iptv-cache.ts`) already drops the re-parse-on-reload cost. Small
       config stays in localStorage (the §7.2 large-IDB / small-localStorage
       split)
+- [x] Web shell visual design system ("Reef"), first pass — a dark-first
+      foundation in `shell-web/src/ui/` (tokens + `theme.css` + focus-aware
+      primitives: `Screen`/`Button`/`TextField`/`PosterCard`/`ListRow`/`Dialog`/
+      `TideBar`/`Badge`/`Callout`/…) replacing browser-default controls and ad-hoc
+      inline hex. One global `[data-focused]` rule restyles all spatial-nav focus
+      (ADR-0010) into a TV-legible coral ring; the signature coral "tide" progress
+      motif recurs on continue-watching, EPG now-bars, and the player seek. Every
+      screen restyled (home, search, detail, catalog/categories, settings, addons,
+      playback) with all `data-*`/label test hooks preserved; bundled Space Grotesk
+      + Inter. Removed the dev-only content-id opener + focus-spike toggle. The RN
+      port should mirror this. **Ongoing — more polish to come** (2026-07-18)
+- [ ] **IPTV live stream selection bug** — playing a live channel can play the
+      wrong stream (e.g. selecting an "NZ" channel plays a different one). Points
+      at a channel-id → stream mismatch on the internal-addon live path
+      (`getStreams`/`resolveStreamId`, ADR-0006). To investigate next
 
 ## Phase 3 — Breadth & polish
 

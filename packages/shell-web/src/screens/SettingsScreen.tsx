@@ -1,72 +1,125 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Settings screen. Runtime entry/persistence of the TMDB API key (§5, §14.3):
-// the key is user-supplied, stored locally via the StorageAdapter, and applied
-// by rebuilding the core (reloadCore, passed from the composition root). TMDB is
-// a metadata provider — presentation data only (§5.1) — so naming it is
-// neutrality-safe. Copy routes through the labels module; focus follows the
-// AddonManagerScreen conventions.
+// Settings screen. Runtime entry/persistence of the TMDB API key and Real-Debrid
+// token (§5, §14.3): user-supplied, stored locally via the StorageAdapter, and
+// applied by rebuilding the core (reloadCore, from the composition root). TMDB is
+// a metadata provider (presentation data only, §5.1) and Real-Debrid a stream
+// resolver — naming them is neutrality-safe. Copy routes through labels.
 
 import { useEffect } from "react";
-import type { CSSProperties, FormEvent } from "react";
+import type { FormEvent, ReactNode } from "react";
 import {
   labels,
   useDebridSettings,
   useTmdbSettings,
 } from "@shrimpler/shared-ui";
-import { FocusContext, setFocus, useBackHandler, useFocusable } from "../focus";
-import { BackButton } from "../components/BackButton";
+import { setFocus, useBackHandler } from "../focus";
+import { Button, Callout, Screen, TextField } from "../ui";
 import type { NavigationProps } from "../navigation";
 
 const SCREEN_FOCUS_KEY = "SETTINGS";
 const INPUT_FOCUS_KEY = "SETTINGS_INPUT";
 
-const focusOutline = (focused: boolean): CSSProperties => ({
-  outline: focused ? "2px solid #fff" : "2px solid transparent",
-});
-
 interface SettingsScreenProps extends NavigationProps {
   reloadCore: () => Promise<void>;
 }
 
-export function SettingsScreen({
-  onNavigate,
-  reloadCore,
-}: SettingsScreenProps) {
-  const { apiKey, hasProvider, isSaving, justSaved, setApiKey, save, clear } =
-    useTmdbSettings(reloadCore);
+/** A settings card: labeled field, hint, Save/Clear, and a status line. */
+function SettingKey({
+  label,
+  hint,
+  value,
+  onChangeText,
+  onSave,
+  onClear,
+  isSaving,
+  active,
+  activeLabel,
+  inactiveLabel,
+  justSaved,
+  inputFocusKey,
+}: {
+  label: string;
+  hint: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  onSave: () => void;
+  onClear: () => void;
+  isSaving: boolean;
+  active: boolean;
+  activeLabel: string;
+  inactiveLabel: string;
+  justSaved: boolean;
+  inputFocusKey?: string;
+}) {
+  function onSubmit(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    onSave();
+  }
+  return (
+    <section
+      style={{
+        background: "var(--surface)",
+        border: "1px solid var(--line)",
+        borderRadius: "var(--r-lg)",
+        padding: "1.25rem",
+        marginBottom: "1.25rem",
+      }}
+    >
+      <form onSubmit={onSubmit}>
+        <TextField
+          focusKey={inputFocusKey}
+          label={label}
+          type="text"
+          value={value}
+          onChangeText={onChangeText}
+          disabled={isSaving}
+        />
+        <p style={{ margin: "0.5rem 0 1rem", color: "var(--sand-faint)", fontSize: "var(--fs-small)" }}>
+          {hint}
+        </p>
+        <div style={{ display: "flex", gap: "0.6rem" }}>
+          <Button type="button" onPress={onSave} disabled={isSaving}>
+            {labels.save}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onPress={onClear}
+            disabled={isSaving}
+          >
+            {labels.clear}
+          </Button>
+        </div>
+      </form>
+      <Callout tone="status" role="status" style={{ marginBottom: 0 }}>
+        <StatusDot on={active} />
+        {active ? activeLabel : inactiveLabel}
+        {justSaved ? ` — ${labels.saved}` : ""}
+      </Callout>
+    </section>
+  );
+}
+
+function StatusDot({ on }: { on: boolean }): ReactNode {
+  return (
+    <span
+      aria-hidden
+      style={{
+        display: "inline-block",
+        width: 8,
+        height: 8,
+        borderRadius: "50%",
+        marginRight: "0.5rem",
+        verticalAlign: "middle",
+        background: on ? "var(--seafoam)" : "var(--sand-faint)",
+      }}
+    />
+  );
+}
+
+export function SettingsScreen({ onNavigate, reloadCore }: SettingsScreenProps) {
+  const tmdb = useTmdbSettings(reloadCore);
   const debrid = useDebridSettings(reloadCore);
-
-  const { ref: inputRef, focused: inputFocused } = useFocusable<
-    object,
-    HTMLInputElement
-  >({
-    focusKey: INPUT_FOCUS_KEY,
-    // Move real DOM focus onto the field so keystrokes land in it (the engine
-    // only tracks logical focus). Same TV wrinkle acknowledged in the addon form.
-    onFocus: () => inputRef.current?.focus(),
-  });
-
-  const saveButton = useFocusable<object, HTMLButtonElement>({
-    onEnterPress: () => void save(),
-  });
-  const clearButton = useFocusable<object, HTMLButtonElement>({
-    onEnterPress: () => void clear(),
-  });
-
-  const debridInput = useFocusable<object, HTMLInputElement>({
-    onFocus: () => debridInput.ref.current?.focus(),
-  });
-  const debridSaveButton = useFocusable<object, HTMLButtonElement>({
-    onEnterPress: () => void debrid.save(),
-  });
-  const debridClearButton = useFocusable<object, HTMLButtonElement>({
-    onEnterPress: () => void debrid.clear(),
-  });
-
-  const { ref, focusKey } = useFocusable<object, HTMLElement>({
-    focusKey: SCREEN_FOCUS_KEY,
-    saveLastFocusedChild: true,
-  });
 
   useBackHandler(() => onNavigate({ screen: "home" }));
 
@@ -74,115 +127,39 @@ export function SettingsScreen({
     void setFocus(INPUT_FOCUS_KEY);
   }, []);
 
-  function onFormSubmit(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-    void save();
-  }
-
   return (
-    <FocusContext.Provider value={focusKey}>
-      <main ref={ref} style={{ padding: "1rem" }}>
-        <header style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-          <BackButton onBack={() => onNavigate({ screen: "home" })} />
-          <h1>{labels.settings}</h1>
-        </header>
-
-        <form onSubmit={onFormSubmit} style={{ margin: "1rem 0" }}>
-          <label>
-            {labels.tmdbKeyLabel}
-            <input
-              ref={inputRef}
-              type="text"
-              value={apiKey}
-              data-focused={inputFocused}
-              disabled={isSaving}
-              onChange={(e) => setApiKey(e.target.value)}
-              style={{ ...focusOutline(inputFocused), display: "block" }}
-            />
-          </label>
-          <p>
-            <small>{labels.tmdbKeyHint}</small>
-          </p>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button
-              ref={saveButton.ref}
-              type="submit"
-              data-focused={saveButton.focused}
-              disabled={isSaving}
-              style={focusOutline(saveButton.focused)}
-            >
-              {labels.save}
-            </button>
-            <button
-              ref={clearButton.ref}
-              type="button"
-              data-focused={clearButton.focused}
-              disabled={isSaving}
-              onClick={() => void clear()}
-              style={focusOutline(clearButton.focused)}
-            >
-              {labels.clear}
-            </button>
-          </div>
-        </form>
-
-        <p role="status">
-          {hasProvider ? labels.tmdbKeyActive : labels.tmdbKeyInactive}
-          {justSaved ? ` — ${labels.saved}` : ""}
-        </p>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void debrid.save();
-          }}
-          style={{ margin: "1rem 0" }}
-        >
-          <label>
-            {labels.debridTokenLabel}
-            <input
-              ref={debridInput.ref}
-              type="text"
-              value={debrid.token}
-              data-focused={debridInput.focused}
-              disabled={debrid.isSaving}
-              onChange={(e) => debrid.setToken(e.target.value)}
-              style={{ ...focusOutline(debridInput.focused), display: "block" }}
-            />
-          </label>
-          <p>
-            <small>{labels.debridTokenHint}</small>
-          </p>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button
-              ref={debridSaveButton.ref}
-              type="submit"
-              data-focused={debridSaveButton.focused}
-              disabled={debrid.isSaving}
-              style={focusOutline(debridSaveButton.focused)}
-            >
-              {labels.save}
-            </button>
-            <button
-              ref={debridClearButton.ref}
-              type="button"
-              data-focused={debridClearButton.focused}
-              disabled={debrid.isSaving}
-              onClick={() => void debrid.clear()}
-              style={focusOutline(debridClearButton.focused)}
-            >
-              {labels.clear}
-            </button>
-          </div>
-        </form>
-
-        <p role="status">
-          {debrid.hasDebrid
-            ? labels.debridTokenActive
-            : labels.debridTokenInactive}
-          {debrid.justSaved ? ` — ${labels.saved}` : ""}
-        </p>
-      </main>
-    </FocusContext.Provider>
+    <Screen
+      focusKey={SCREEN_FOCUS_KEY}
+      title={labels.settings}
+      onBack={() => onNavigate({ screen: "home" })}
+    >
+      <SettingKey
+        label={labels.tmdbKeyLabel}
+        hint={labels.tmdbKeyHint}
+        value={tmdb.apiKey}
+        onChangeText={tmdb.setApiKey}
+        onSave={() => void tmdb.save()}
+        onClear={() => void tmdb.clear()}
+        isSaving={tmdb.isSaving}
+        active={tmdb.hasProvider}
+        activeLabel={labels.tmdbKeyActive}
+        inactiveLabel={labels.tmdbKeyInactive}
+        justSaved={tmdb.justSaved}
+        inputFocusKey={INPUT_FOCUS_KEY}
+      />
+      <SettingKey
+        label={labels.debridTokenLabel}
+        hint={labels.debridTokenHint}
+        value={debrid.token}
+        onChangeText={debrid.setToken}
+        onSave={() => void debrid.save()}
+        onClear={() => void debrid.clear()}
+        isSaving={debrid.isSaving}
+        active={debrid.hasDebrid}
+        activeLabel={labels.debridTokenActive}
+        inactiveLabel={labels.debridTokenInactive}
+        justSaved={debrid.justSaved}
+      />
+    </Screen>
   );
 }

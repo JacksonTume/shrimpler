@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Add-by-URL addon manager (§6.2, §9.1). First consumer of the addon engine:
-// paste a manifest URL to install a source, then toggle or remove installed
-// ones. All copy routes through the labels module (§9.2 / ADR-0007). Focus
-// wiring follows the FocusSpikeScreen conventions (norigin spatial nav).
+// Add-by-URL source manager (§6.2, §9.1). Paste a Stremio manifest URL to install
+// a source, add M3U playlists / Xtream accounts, then toggle or remove them. All
+// copy routes through the labels module (§9.2 / ADR-0007); "addon"/"manifest" is
+// internal vocabulary, the UI says "Playlist"/"Source".
 
 import { useEffect, useState } from "react";
-import type { CSSProperties, FormEvent } from "react";
+import type { FormEvent, ReactNode } from "react";
 import {
   labels,
   useAddonManager,
@@ -17,21 +17,67 @@ import type {
   IptvPlaylist,
   XtreamAccount,
 } from "@shrimpler/core";
-import { FocusContext, setFocus, useBackHandler, useFocusable } from "../focus";
-import { BackButton } from "../components/BackButton";
+import { setFocus, useBackHandler } from "../focus";
+import { Button, Callout, Screen, TextField } from "../ui";
 import type { NavigationProps } from "../navigation";
+
+const SCREEN_FOCUS_KEY = "ADDONS";
+const INPUT_FOCUS_KEY = "ADDONS_INPUT";
 
 export interface AddonManagerScreenProps extends NavigationProps {
   /** Rebuilds the core so a new/removed IPTV playlist's channels take effect. */
   reloadCore: () => Promise<void>;
 }
 
-const SCREEN_FOCUS_KEY = "ADDONS";
-const INPUT_FOCUS_KEY = "ADDONS_INPUT";
+function Card({ title, children }: { title?: string; children: ReactNode }) {
+  return (
+    <section
+      style={{
+        background: "var(--surface)",
+        border: "1px solid var(--line)",
+        borderRadius: "var(--r-lg)",
+        padding: "1.25rem",
+        marginBottom: "1.25rem",
+      }}
+    >
+      {title !== undefined && (
+        <h2 style={{ fontSize: "var(--fs-h2)", fontWeight: 700, marginBottom: "0.85rem" }}>
+          {title}
+        </h2>
+      )}
+      {children}
+    </section>
+  );
+}
 
-const focusOutline = (focused: boolean): CSSProperties => ({
-  outline: focused ? "2px solid #fff" : "2px solid transparent",
-});
+/** A managed-entry row: a label and trailing action buttons. */
+function EntryRow({
+  label,
+  dimmed,
+  actions,
+  ...rest
+}: {
+  label: ReactNode;
+  dimmed?: boolean;
+  actions: ReactNode;
+} & Record<`data-${string}`, string>) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "0.75rem",
+        padding: "0.6rem 0",
+        opacity: dimmed === true ? 0.5 : 1,
+        borderTop: "1px solid var(--line)",
+      }}
+      {...rest}
+    >
+      <span style={{ flex: 1, minWidth: 0, wordBreak: "break-all" }}>{label}</span>
+      {actions}
+    </div>
+  );
+}
 
 function AddSourceForm({
   isInstalling,
@@ -44,23 +90,6 @@ function AddSourceForm({
 }) {
   const [url, setUrl] = useState("");
 
-  const { ref: inputRef, focused: inputFocused } = useFocusable<
-    object,
-    HTMLInputElement
-  >({
-    focusKey: INPUT_FOCUS_KEY,
-    // Move real DOM focus onto the field so keystrokes land in it (the engine
-    // only tracks logical focus; the ref points at the same input node).
-    // Arrow-key vs. caret conflict is a known TV wrinkle — acceptable for the
-    // web-first MVP (revisit in the RN/TV pass).
-    onFocus: () => inputRef.current?.focus(),
-  });
-
-  const { ref: buttonRef, focused: buttonFocused } = useFocusable<
-    object,
-    HTMLButtonElement
-  >({ onEnterPress: () => void submit() });
-
   async function submit(): Promise<void> {
     const trimmed = url.trim();
     if (trimmed === "" || isInstalling) {
@@ -71,40 +100,36 @@ function AddSourceForm({
       setUrl("");
     }
   }
-
-  function onFormSubmit(event: FormEvent<HTMLFormElement>): void {
+  function onSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     void submit();
   }
 
   return (
-    <form onSubmit={onFormSubmit} style={{ margin: "1rem 0" }}>
-      <label>
-        {labels.playlistUrl}
-        <input
-          ref={inputRef}
+    <form onSubmit={onSubmit}>
+      <div style={{ display: "flex", gap: "0.6rem", alignItems: "flex-end" }}>
+        <TextField
+          focusKey={INPUT_FOCUS_KEY}
+          label={labels.playlistUrl}
           type="url"
           value={url}
-          data-focused={inputFocused}
-          disabled={isInstalling}
-          onChange={(e) => setUrl(e.target.value)}
+          onChangeText={setUrl}
           placeholder="https://…"
-          style={{ ...focusOutline(inputFocused), display: "block" }}
+          disabled={isInstalling}
+          style={{ flex: 1 }}
         />
-      </label>
-      <button
-        ref={buttonRef}
-        type="submit"
-        data-focused={buttonFocused}
-        disabled={isInstalling || url.trim() === ""}
-        style={focusOutline(buttonFocused)}
-      >
-        {isInstalling ? labels.installing : labels.addSourceButton}
-      </button>
+        <Button
+          type="button"
+          onPress={() => void submit()}
+          disabled={isInstalling || url.trim() === ""}
+        >
+          {isInstalling ? labels.installing : labels.addSourceButton}
+        </Button>
+      </div>
       {installError !== null && (
-        <p role="alert" style={{ color: "#e66" }}>
+        <Callout tone="error" role="alert">
           {installError}
-        </p>
+        </Callout>
       )}
     </form>
   );
@@ -119,112 +144,37 @@ function AddonRow({
   onSetEnabled: (url: string, enabled: boolean) => void;
   onRemove: (url: string) => void;
 }) {
-  const { ref, focusKey } = useFocusable<object, HTMLLIElement>({
-    saveLastFocusedChild: true,
-  });
-  const toggle = useFocusable<object, HTMLButtonElement>({
-    onEnterPress: () => onSetEnabled(addon.manifestUrl, !addon.enabled),
-  });
-  const remove = useFocusable<object, HTMLButtonElement>({
-    onEnterPress: () => onRemove(addon.manifestUrl),
-  });
-
   return (
-    <FocusContext.Provider value={focusKey}>
-      <li
-        ref={ref}
-        data-source={addon.manifestUrl}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.75rem",
-          padding: "0.5rem 0",
-          opacity: addon.enabled ? 1 : 0.5,
-        }}
-      >
-        <span style={{ flex: 1 }}>{addon.manifest.name}</span>
-        <button
-          ref={toggle.ref}
-          type="button"
-          data-focused={toggle.focused}
-          onClick={() => onSetEnabled(addon.manifestUrl, !addon.enabled)}
-          style={focusOutline(toggle.focused)}
-        >
-          {addon.enabled ? labels.disableSource : labels.enableSource}
-        </button>
-        <button
-          ref={remove.ref}
-          type="button"
-          data-focused={remove.focused}
-          onClick={() => onRemove(addon.manifestUrl)}
-          style={focusOutline(remove.focused)}
-        >
-          {labels.removeSource}
-        </button>
-      </li>
-    </FocusContext.Provider>
+    <EntryRow
+      data-source={addon.manifestUrl}
+      dimmed={!addon.enabled}
+      label={addon.manifest.name}
+      actions={
+        <>
+          <Button
+            size="sm"
+            variant="subtle"
+            onPress={() => onSetEnabled(addon.manifestUrl, !addon.enabled)}
+          >
+            {addon.enabled ? labels.disableSource : labels.enableSource}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onPress={() => onRemove(addon.manifestUrl)}
+          >
+            {labels.removeSource}
+          </Button>
+        </>
+      }
+    />
   );
 }
 
-function IptvPlaylistRow({
-  playlist,
-  onRemove,
-}: {
-  playlist: IptvPlaylist;
-  onRemove: (url: string) => void;
-}) {
-  const { ref, focusKey } = useFocusable<object, HTMLLIElement>({
-    saveLastFocusedChild: true,
-  });
-  const remove = useFocusable<object, HTMLButtonElement>({
-    onEnterPress: () => onRemove(playlist.url),
-  });
-  return (
-    <FocusContext.Provider value={focusKey}>
-      <li
-        ref={ref}
-        data-playlist={playlist.url}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.75rem",
-          padding: "0.5rem 0",
-        }}
-      >
-        <span style={{ flex: 1, wordBreak: "break-all" }}>
-          {playlist.name ?? playlist.url}
-        </span>
-        <button
-          ref={remove.ref}
-          type="button"
-          data-focused={remove.focused}
-          onClick={() => onRemove(playlist.url)}
-          style={focusOutline(remove.focused)}
-        >
-          {labels.removeSource}
-        </button>
-      </li>
-    </FocusContext.Provider>
-  );
-}
-
-function IptvPlaylistsSection({
-  reloadCore,
-}: {
-  reloadCore: () => Promise<void>;
-}) {
+function IptvPlaylistsSection({ reloadCore }: { reloadCore: () => Promise<void> }) {
   const { playlists, isSaving, error, addPlaylist, removePlaylist } =
     useIptvPlaylists(reloadCore);
   const [url, setUrl] = useState("");
-
-  const { ref: inputRef, focused: inputFocused } = useFocusable<
-    object,
-    HTMLInputElement
-  >({ onFocus: () => inputRef.current?.focus() });
-  const { ref: buttonRef, focused: buttonFocused } = useFocusable<
-    object,
-    HTMLButtonElement
-  >({ onEnterPress: () => void submit() });
 
   async function submit(): Promise<void> {
     const trimmed = url.trim();
@@ -236,119 +186,73 @@ function IptvPlaylistsSection({
       setUrl("");
     }
   }
-
-  function onFormSubmit(event: FormEvent<HTMLFormElement>): void {
+  function onSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     void submit();
   }
 
   return (
-    <section style={{ marginTop: "2rem" }}>
-      <h2>{labels.iptvTitle}</h2>
-      <form onSubmit={onFormSubmit} style={{ margin: "1rem 0" }}>
-        <label>
-          {labels.iptvUrlLabel}
-          <input
-            ref={inputRef}
+    <Card title={labels.iptvTitle}>
+      <form onSubmit={onSubmit}>
+        <div style={{ display: "flex", gap: "0.6rem", alignItems: "flex-end" }}>
+          <TextField
+            label={labels.iptvUrlLabel}
             type="url"
             value={url}
-            data-focused={inputFocused}
-            disabled={isSaving}
-            onChange={(e) => setUrl(e.target.value)}
+            onChangeText={setUrl}
             placeholder="https://…"
-            style={{ ...focusOutline(inputFocused), display: "block" }}
+            disabled={isSaving}
+            style={{ flex: 1 }}
           />
-        </label>
-        <button
-          ref={buttonRef}
-          type="submit"
-          data-focused={buttonFocused}
-          disabled={isSaving || url.trim() === ""}
-          style={focusOutline(buttonFocused)}
-        >
-          {isSaving ? labels.installing : labels.iptvAddButton}
-        </button>
+          <Button
+            type="button"
+            onPress={() => void submit()}
+            disabled={isSaving || url.trim() === ""}
+          >
+            {isSaving ? labels.installing : labels.iptvAddButton}
+          </Button>
+        </div>
         {error !== null && (
-          <p role="alert" style={{ color: "#e66" }}>
+          <Callout tone="error" role="alert">
             {error}
-          </p>
+          </Callout>
         )}
       </form>
 
       {playlists.length === 0 ? (
-        <p>{labels.iptvEmpty}</p>
+        <Callout tone="muted" style={{ marginBottom: 0 }}>
+          {labels.iptvEmpty}
+        </Callout>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {playlists.map((playlist) => (
-            <IptvPlaylistRow
+        <div style={{ marginTop: "0.75rem" }}>
+          {playlists.map((playlist: IptvPlaylist) => (
+            <EntryRow
               key={playlist.url}
-              playlist={playlist}
-              onRemove={(u) => void removePlaylist(u)}
+              data-playlist={playlist.url}
+              label={playlist.name ?? playlist.url}
+              actions={
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => void removePlaylist(playlist.url)}
+                >
+                  {labels.removeSource}
+                </Button>
+              }
             />
           ))}
-        </ul>
+        </div>
       )}
-    </section>
+    </Card>
   );
 }
 
-function XtreamAccountRow({
-  account,
-  onRemove,
-}: {
-  account: XtreamAccount;
-  onRemove: (host: string, username: string) => void;
-}) {
-  const { ref, focusKey } = useFocusable<object, HTMLLIElement>({
-    saveLastFocusedChild: true,
-  });
-  const remove = useFocusable<object, HTMLButtonElement>({
-    onEnterPress: () => onRemove(account.host, account.username),
-  });
-  return (
-    <FocusContext.Provider value={focusKey}>
-      <li
-        ref={ref}
-        data-xtream={`${account.host}|${account.username}`}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.75rem",
-          padding: "0.5rem 0",
-        }}
-      >
-        <span style={{ flex: 1, wordBreak: "break-all" }}>
-          {account.username} @ {account.host}
-        </span>
-        <button
-          ref={remove.ref}
-          type="button"
-          data-focused={remove.focused}
-          onClick={() => onRemove(account.host, account.username)}
-          style={focusOutline(remove.focused)}
-        >
-          {labels.removeAccount}
-        </button>
-      </li>
-    </FocusContext.Provider>
-  );
-}
-
-function IptvXtreamSection({
-  reloadCore,
-}: {
-  reloadCore: () => Promise<void>;
-}) {
+function IptvXtreamSection({ reloadCore }: { reloadCore: () => Promise<void> }) {
   const { accounts, isSaving, error, addAccount, removeAccount } =
     useIptvXtream(reloadCore);
   const [host, setHost] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-
-  const field = (): CSSProperties => ({
-    display: "block",
-    margin: "0.25rem 0",
-  });
 
   async function submit(): Promise<void> {
     if (host.trim() === "" || username.trim() === "" || isSaving) {
@@ -361,74 +265,81 @@ function IptvXtreamSection({
       setPassword("");
     }
   }
-
-  function onFormSubmit(event: FormEvent<HTMLFormElement>): void {
+  function onSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     void submit();
   }
 
   return (
-    <section style={{ marginTop: "2rem" }}>
-      <h2>{labels.xtreamTitle}</h2>
-      <form onSubmit={onFormSubmit} style={{ margin: "1rem 0" }}>
-        <label style={field()}>
-          {labels.xtreamHost}
-          <input
+    <Card title={labels.xtreamTitle}>
+      <form onSubmit={onSubmit}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+          <TextField
+            label={labels.xtreamHost}
             type="url"
             value={host}
-            disabled={isSaving}
-            onChange={(e) => setHost(e.target.value)}
+            onChangeText={setHost}
             placeholder="http://host:port"
-            style={{ display: "block" }}
+            disabled={isSaving}
           />
-        </label>
-        <label style={field()}>
-          {labels.xtreamUsername}
-          <input
+          <TextField
+            label={labels.xtreamUsername}
             type="text"
             value={username}
+            onChangeText={setUsername}
             disabled={isSaving}
-            onChange={(e) => setUsername(e.target.value)}
-            style={{ display: "block" }}
           />
-        </label>
-        <label style={field()}>
-          {labels.xtreamPassword}
-          <input
+          <TextField
+            label={labels.xtreamPassword}
             type="password"
             value={password}
+            onChangeText={setPassword}
             disabled={isSaving}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ display: "block" }}
           />
-        </label>
-        <button
-          type="submit"
-          disabled={isSaving || host.trim() === "" || username.trim() === ""}
-        >
-          {isSaving ? labels.installing : labels.xtreamAddButton}
-        </button>
+        </div>
+        <div style={{ marginTop: "0.75rem" }}>
+          <Button
+            type="button"
+            onPress={() => void submit()}
+            disabled={isSaving || host.trim() === "" || username.trim() === ""}
+          >
+            {isSaving ? labels.installing : labels.xtreamAddButton}
+          </Button>
+        </div>
         {error !== null && (
-          <p role="alert" style={{ color: "#e66" }}>
+          <Callout tone="error" role="alert">
             {error}
-          </p>
+          </Callout>
         )}
       </form>
 
       {accounts.length === 0 ? (
-        <p>{labels.xtreamEmpty}</p>
+        <Callout tone="muted" style={{ marginBottom: 0 }}>
+          {labels.xtreamEmpty}
+        </Callout>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {accounts.map((account) => (
-            <XtreamAccountRow
+        <div style={{ marginTop: "0.75rem" }}>
+          {accounts.map((account: XtreamAccount) => (
+            <EntryRow
               key={`${account.host}|${account.username}`}
-              account={account}
-              onRemove={(h, u) => void removeAccount(h, u)}
+              data-xtream={`${account.host}|${account.username}`}
+              label={`${account.username} @ ${account.host}`}
+              actions={
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onPress={() =>
+                    void removeAccount(account.host, account.username)
+                  }
+                >
+                  {labels.removeAccount}
+                </Button>
+              }
             />
           ))}
-        </ul>
+        </div>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -438,10 +349,6 @@ export function AddonManagerScreen({
 }: AddonManagerScreenProps) {
   const { addons, isInstalling, installError, addByUrl, remove, setEnabled } =
     useAddonManager();
-  const { ref, focusKey } = useFocusable<object, HTMLDivElement>({
-    focusKey: SCREEN_FOCUS_KEY,
-    saveLastFocusedChild: true,
-  });
 
   useBackHandler(() => onNavigate({ screen: "home" }));
 
@@ -450,23 +357,23 @@ export function AddonManagerScreen({
   }, []);
 
   return (
-    <FocusContext.Provider value={focusKey}>
-      <main ref={ref} style={{ padding: "1rem" }}>
-        <header style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-          <BackButton onBack={() => onNavigate({ screen: "home" })} />
-          <h1>{labels.sourcesTitle}</h1>
-        </header>
-
+    <Screen
+      focusKey={SCREEN_FOCUS_KEY}
+      title={labels.sourcesTitle}
+      onBack={() => onNavigate({ screen: "home" })}
+    >
+      <Card>
         <AddSourceForm
           isInstalling={isInstalling}
           installError={installError}
           onAdd={addByUrl}
         />
-
         {addons.length === 0 ? (
-          <p>{labels.emptySources}</p>
+          <Callout tone="muted" style={{ marginBottom: 0 }}>
+            {labels.emptySources}
+          </Callout>
         ) : (
-          <ul style={{ listStyle: "none", padding: 0 }}>
+          <div style={{ marginTop: "0.75rem" }}>
             {addons.map((addon) => (
               <AddonRow
                 key={addon.manifestUrl}
@@ -475,12 +382,12 @@ export function AddonManagerScreen({
                 onRemove={(url) => void remove(url)}
               />
             ))}
-          </ul>
+          </div>
         )}
+      </Card>
 
-        <IptvPlaylistsSection reloadCore={reloadCore} />
-        <IptvXtreamSection reloadCore={reloadCore} />
-      </main>
-    </FocusContext.Provider>
+      <IptvPlaylistsSection reloadCore={reloadCore} />
+      <IptvXtreamSection reloadCore={reloadCore} />
+    </Screen>
   );
 }

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Home screen. Empty-by-default per §9.1: no sources, no suggestions — the user
-// supplies everything. Its interactive elements route to the addon manager and
-// the settings screen.
+// supplies everything. A wordmark hero, the continue-watching rail (when there is
+// progress), and the primary navigation as tiles into search, live/movies/series
+// browse, the source manager, and settings.
 
 import { useEffect } from "react";
-import type { CSSProperties } from "react";
 import { labels, useContinueWatching } from "@shrimpler/shared-ui";
 import type { ProgressEntry } from "@shrimpler/core";
-import { FocusContext, setFocus, useFocusable } from "../focus";
+import { setFocus } from "../focus";
+import { Button, PosterCard, Rail, Screen, Wordmark } from "../ui";
 import type { NavigationProps } from "../navigation";
 
 const SCREEN_FOCUS_KEY = "HOME";
@@ -18,105 +19,17 @@ const SERIES_FOCUS_KEY = "HOME_SERIES";
 const ADD_FOCUS_KEY = "HOME_ADD";
 const SETTINGS_FOCUS_KEY = "HOME_SETTINGS";
 
-const focusOutline = (focused: boolean): CSSProperties => ({
-  outline: focused ? "2px solid #fff" : "2px solid transparent",
-  display: "block",
-});
-
-function HomeButton({
-  focusKey,
-  label,
-  onPress,
-}: {
-  focusKey: string;
-  label: string;
-  onPress: () => void;
-}) {
-  const { ref, focused } = useFocusable<object, HTMLButtonElement>({
-    focusKey,
-    onEnterPress: onPress,
-  });
-  return (
-    <button
-      ref={ref}
-      type="button"
-      data-focused={focused}
-      onClick={onPress}
-      style={focusOutline(focused)}
-    >
-      {label}
-    </button>
-  );
-}
-
-function progressPercent(entry: ProgressEntry): number {
+function progressFraction(entry: ProgressEntry): number {
   if (entry.durationSec <= 0) {
     return 0;
   }
-  return Math.min(
-    100,
-    Math.round((entry.positionSec / entry.durationSec) * 100),
-  );
+  return Math.min(1, entry.positionSec / entry.durationSec);
 }
 
-function ContinueWatchingCard({
-  entry,
-  onOpen,
-}: {
-  entry: ProgressEntry;
-  onOpen: (entry: ProgressEntry) => void;
-}) {
-  const { ref, focused } = useFocusable<object, HTMLButtonElement>({
-    onEnterPress: () => onOpen(entry),
-  });
-  const episodeTag =
-    entry.season !== undefined && entry.episode !== undefined
-      ? ` · S${entry.season}E${entry.episode}`
-      : "";
-  return (
-    <button
-      ref={ref}
-      type="button"
-      data-focused={focused}
-      onClick={() => onOpen(entry)}
-      style={{
-        ...focusOutline(focused),
-        width: "160px",
-        textAlign: "left",
-        padding: 0,
-      }}
-    >
-      {entry.poster !== undefined && (
-        <img
-          src={entry.poster}
-          alt=""
-          style={{ width: "100%", display: "block" }}
-        />
-      )}
-      <span style={{ display: "block", padding: "0.25rem" }}>
-        {entry.name ?? entry.id}
-        {episodeTag}
-      </span>
-      <span
-        aria-hidden
-        style={{
-          display: "block",
-          height: "3px",
-          margin: "0 0.25rem",
-          background: "#555",
-        }}
-      >
-        <span
-          style={{
-            display: "block",
-            height: "100%",
-            width: `${progressPercent(entry)}%`,
-            background: "#fff",
-          }}
-        />
-      </span>
-    </button>
-  );
+function episodeTag(entry: ProgressEntry): string {
+  return entry.season !== undefined && entry.episode !== undefined
+    ? ` · S${entry.season}E${entry.episode}`
+    : "";
 }
 
 function ContinueWatchingSection({ onNavigate }: NavigationProps) {
@@ -125,50 +38,63 @@ function ContinueWatchingSection({ onNavigate }: NavigationProps) {
     return null;
   }
   return (
-    <section>
-      <h2>{labels.continueWatching}</h2>
-      <div style={{ display: "flex", gap: "0.75rem", overflowX: "auto" }}>
-        {entries.map((entry) => (
-          <ContinueWatchingCard
-            key={entry.id}
-            entry={entry}
-            onOpen={(e) =>
-              onNavigate({ screen: "detail", id: e.id, type: e.type })
-            }
-          />
-        ))}
-      </div>
-    </section>
+    <Rail title={labels.continueWatching}>
+      {entries.map((entry) => (
+        <PosterCard
+          key={entry.id}
+          title={`${entry.name ?? entry.id}${episodeTag(entry)}`}
+          poster={entry.poster}
+          progress={progressFraction(entry)}
+          width={168}
+          onPress={() =>
+            onNavigate({ screen: "detail", id: entry.id, type: entry.type })
+          }
+        />
+      ))}
+    </Rail>
   );
 }
 
-export function HomeScreen({ onNavigate }: NavigationProps) {
-  const { ref, focusKey } = useFocusable<object, HTMLElement>({
-    focusKey: SCREEN_FOCUS_KEY,
-    saveLastFocusedChild: true,
-  });
+const tileStyle = { flex: "1 1 160px" } as const;
 
+export function HomeScreen({ onNavigate }: NavigationProps) {
   useEffect(() => {
     void setFocus(SEARCH_FOCUS_KEY);
   }, []);
 
+  const hero = (
+    <div style={{ margin: "1.5rem 0 2.5rem" }}>
+      <Wordmark size="var(--fs-display)" />
+      <p style={{ marginTop: "0.5rem", color: "var(--sand-dim)" }}>
+        {labels.tagline}
+      </p>
+    </div>
+  );
+
   return (
-    <FocusContext.Provider value={focusKey}>
-      <main ref={ref}>
-        <h1>{labels.appName}</h1>
-        <p>{labels.tagline}</p>
-        <ContinueWatchingSection onNavigate={onNavigate} />
-        <section>
-          <h2>{labels.emptyHome}</h2>
-          <p>{labels.emptyHomeHint}</p>
-          <HomeButton
+    <Screen focusKey={SCREEN_FOCUS_KEY} hero={hero}>
+      <ContinueWatchingSection onNavigate={onNavigate} />
+
+      <section>
+        <h2 style={{ fontSize: "var(--fs-h2)", fontWeight: 700 }}>
+          {labels.emptyHome}
+        </h2>
+        <p style={{ margin: "0.35rem 0 1rem", color: "var(--sand-dim)" }}>
+          {labels.emptyHomeHint}
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
+          <Button
+            variant="primary"
             focusKey={SEARCH_FOCUS_KEY}
-            label={labels.searchTitle}
+            style={tileStyle}
             onPress={() => onNavigate({ screen: "search" })}
-          />
-          <HomeButton
+          >
+            {labels.searchTitle}
+          </Button>
+          <Button
+            variant="subtle"
             focusKey={LIVE_FOCUS_KEY}
-            label={labels.liveTv}
+            style={tileStyle}
             onPress={() =>
               onNavigate({
                 screen: "categories",
@@ -177,10 +103,13 @@ export function HomeScreen({ onNavigate }: NavigationProps) {
                 title: labels.liveTv,
               })
             }
-          />
-          <HomeButton
+          >
+            {labels.liveTv}
+          </Button>
+          <Button
+            variant="subtle"
             focusKey={MOVIES_FOCUS_KEY}
-            label={labels.moviesTitle}
+            style={tileStyle}
             onPress={() =>
               onNavigate({
                 screen: "categories",
@@ -189,10 +118,13 @@ export function HomeScreen({ onNavigate }: NavigationProps) {
                 title: labels.moviesTitle,
               })
             }
-          />
-          <HomeButton
+          >
+            {labels.moviesTitle}
+          </Button>
+          <Button
+            variant="subtle"
             focusKey={SERIES_FOCUS_KEY}
-            label={labels.seriesTitle}
+            style={tileStyle}
             onPress={() =>
               onNavigate({
                 screen: "categories",
@@ -201,22 +133,37 @@ export function HomeScreen({ onNavigate }: NavigationProps) {
                 title: labels.seriesTitle,
               })
             }
-          />
-          <HomeButton
+          >
+            {labels.seriesTitle}
+          </Button>
+        </div>
+        <div
+          style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginTop: "0.75rem" }}
+        >
+          <Button
+            variant="ghost"
             focusKey={ADD_FOCUS_KEY}
-            label={labels.addPlaylist}
+            style={tileStyle}
             onPress={() => onNavigate({ screen: "addons" })}
-          />
-          <HomeButton
+          >
+            {labels.addPlaylist}
+          </Button>
+          <Button
+            variant="ghost"
             focusKey={SETTINGS_FOCUS_KEY}
-            label={labels.settings}
+            style={tileStyle}
             onPress={() => onNavigate({ screen: "settings" })}
-          />
-        </section>
-        <footer>
-          <small>{labels.disclaimer}</small>
-        </footer>
-      </main>
-    </FocusContext.Provider>
+          >
+            {labels.settings}
+          </Button>
+        </div>
+      </section>
+
+      <footer style={{ marginTop: "3rem" }}>
+        <small style={{ color: "var(--sand-faint)", fontSize: "var(--fs-caption)" }}>
+          {labels.disclaimer}
+        </small>
+      </footer>
+    </Screen>
   );
 }

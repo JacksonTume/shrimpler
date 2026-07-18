@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.1.0",
+    "@fontsource/space-grotesk": "^5.1.0",
     "@noriginmedia/norigin-spatial-navigation": "^3.2.1",
     "@shrimpler/core": "workspace:*",
     "@shrimpler/shared-ui": "workspace:*",

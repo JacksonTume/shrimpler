@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import "./ui/theme.css";
 import { StrictMode, useCallback, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { CoreProvider } from "@shrimpler/shared-ui";

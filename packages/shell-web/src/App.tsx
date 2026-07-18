@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
-import type { FormEvent } from "react";
-import type { IptvRefreshPhase, IptvRefreshProgress, MediaType } from "@shrimpler/core";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { IptvRefreshPhase, IptvRefreshProgress } from "@shrimpler/core";
 import { labels, useIptvRefresh } from "@shrimpler/shared-ui";
 import { HomeScreen } from "./screens/HomeScreen";
 import { AddonManagerScreen } from "./screens/AddonManagerScreen";
@@ -11,60 +10,13 @@ import { SearchScreen } from "./screens/SearchScreen";
 import { CatalogScreen } from "./screens/CatalogScreen";
 import { CategoriesScreen } from "./screens/CategoriesScreen";
 import { PlaybackScreen } from "./screens/PlaybackScreen";
+import { Spinner, TideBar } from "./ui";
 import type { Route } from "./navigation";
 import { hashToRoute, routeToHash } from "./route-url";
-
-// Dev-only focus spike (§11 Phase 0). Lazy so the chunk is never fetched in
-// production, where the toggle is not rendered.
-const FocusSpikeScreen = lazy(() =>
-  import("./screens/FocusSpikeScreen").then((m) => ({
-    default: m.FocusSpikeScreen,
-  })),
-);
 
 export interface AppProps {
   /** Rebuilds the composed Core (used by Settings to apply a new TMDB key). */
   reloadCore: () => Promise<void>;
-}
-
-// Dev-only entry point for the detail screen. There is no browse/catalog screen
-// yet (Phase 3), so this lets a developer open a detail by typing an id + type.
-// Ships nothing to production and hard-codes no ids (neutrality, §9.1).
-function OpenByIdControl({
-  onOpen,
-}: {
-  onOpen: (id: string, type: MediaType) => void;
-}) {
-  const [id, setId] = useState("");
-  const [type, setType] = useState<"movie" | "series">("movie");
-
-  function submit(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-    const trimmed = id.trim();
-    if (trimmed !== "") {
-      onOpen(trimmed, type);
-    }
-  }
-
-  return (
-    <form onSubmit={submit} style={{ display: "flex", gap: "0.25rem" }}>
-      <input
-        aria-label="content id"
-        value={id}
-        onChange={(e) => setId(e.target.value)}
-        placeholder="content id"
-      />
-      <select
-        aria-label="content type"
-        value={type}
-        onChange={(e) => setType(e.target.value as "movie" | "series")}
-      >
-        <option value="movie">movie</option>
-        <option value="series">series</option>
-      </select>
-      <button type="submit">Open</button>
-    </form>
-  );
 }
 
 function phaseLabel(phase: IptvRefreshPhase | undefined): string {
@@ -91,38 +43,6 @@ function formatElapsed(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-/** A rotating SVG spinner — self-contained (SMIL), no global CSS needed. */
-function Spinner() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-        fill="none"
-        stroke="rgba(255,255,255,0.25)"
-        strokeWidth="3"
-      />
-      <path
-        d="M12 3 a9 9 0 0 1 9 9"
-        fill="none"
-        stroke="#fff"
-        strokeWidth="3"
-        strokeLinecap="round"
-      >
-        <animateTransform
-          attributeName="transform"
-          type="rotate"
-          from="0 12 12"
-          to="360 12 12"
-          dur="0.8s"
-          repeatCount="indefinite"
-        />
-      </path>
-    </svg>
-  );
-}
-
 /**
  * Non-blocking card shown while IPTV sources refresh in the background. Surfaces
  * the current phase, which source (when several), a progress bar, and elapsed
@@ -145,7 +65,6 @@ function IptvRefreshIndicator({
   const total = progress?.total ?? 0;
   const completed = progress?.completed ?? 0;
   const multi = total > 1;
-  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   const detail = [
     phaseLabel(progress?.phase),
@@ -165,13 +84,14 @@ function IptvRefreshIndicator({
         left: 16,
         zIndex: 20,
         width: 260,
-        padding: "0.6rem 0.8rem",
-        borderRadius: 10,
-        background: "rgba(20, 20, 22, 0.92)",
-        color: "#fff",
-        boxShadow: "0 6px 24px rgba(0, 0, 0, 0.4)",
+        padding: "0.7rem 0.85rem",
+        borderRadius: "var(--r-md)",
+        background: "var(--surface)",
+        border: "1px solid var(--line)",
+        color: "var(--sand)",
+        boxShadow: "var(--shadow)",
         pointerEvents: "none",
-        fontSize: "0.85rem",
+        fontSize: "var(--fs-small)",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -181,38 +101,20 @@ function IptvRefreshIndicator({
       <div
         style={{
           marginTop: "0.35rem",
-          opacity: 0.8,
+          color: "var(--sand-dim)",
           fontVariantNumeric: "tabular-nums",
         }}
       >
         {detail}
       </div>
       {total > 0 && (
-        <div
-          style={{
-            marginTop: "0.5rem",
-            height: 4,
-            borderRadius: 2,
-            background: "rgba(255, 255, 255, 0.18)",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              width: `${pct}%`,
-              height: "100%",
-              background: "#4ea1ff",
-              transition: "width 0.3s ease",
-            }}
-          />
-        </div>
+        <TideBar value={total > 0 ? completed / total : 0} style={{ marginTop: "0.5rem" }} />
       )}
     </div>
   );
 }
 
 export function App({ reloadCore }: AppProps) {
-  const [showSpike, setShowSpike] = useState(false);
   // Serve cached IPTV instantly, then refresh sources in the background and
   // rebuild the core if anything changed (ADR-0006).
   const { isRefreshing, progress } = useIptvRefresh(reloadCore);
@@ -250,31 +152,7 @@ export function App({ reloadCore }: AppProps) {
   return (
     <>
       {isRefreshing && <IptvRefreshIndicator progress={progress} />}
-      {import.meta.env.DEV && (
-        <div
-          style={{
-            position: "fixed",
-            top: 8,
-            right: 8,
-            zIndex: 10,
-            display: "flex",
-            gap: "0.5rem",
-            alignItems: "center",
-          }}
-        >
-          <OpenByIdControl
-            onOpen={(id, type) => navigate({ screen: "detail", id, type })}
-          />
-          <button type="button" onClick={() => setShowSpike((s) => !s)}>
-            {showSpike ? "Show home" : "Show focus spike"}
-          </button>
-        </div>
-      )}
-      {showSpike ? (
-        <Suspense fallback={null}>
-          <FocusSpikeScreen />
-        </Suspense>
-      ) : route.screen === "addons" ? (
+      {route.screen === "addons" ? (
         <AddonManagerScreen onNavigate={navigate} reloadCore={reloadCore} />
       ) : route.screen === "settings" ? (
         <SettingsScreen onNavigate={navigate} reloadCore={reloadCore} />

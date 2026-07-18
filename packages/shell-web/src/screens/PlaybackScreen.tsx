@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Playback screen (§7.1, §10 step 4): mounts a real Html5VideoPlayerAdapter,
-// renders its <video> element, and drives it with basic transport controls
-// (play/pause, seek, back). The player is web-specific, so the screen constructs
-// the concrete Html5VideoPlayerAdapter directly to reach its `element` (the core
-// PlayerAdapter contract is DOM-less by design, ADR-0001/0008). It receives an
-// already-resolved source (a playable url from the stream picker → debrid), so
-// no resolution happens here. Copy routes through labels (ADR-0007); focus/back
-// follow the SettingsScreen conventions.
+// renders its <video> element full-bleed, and drives it with transport controls
+// (play/pause, seek, back) styled in the Reef palette (coral tide seek bar). The
+// player is web-specific, so the screen constructs the concrete adapter directly
+// to reach its `element` (the core PlayerAdapter contract is DOM-less by design,
+// ADR-0001/0008). It receives an already-resolved source (a playable url from the
+// stream picker → debrid), so no resolution happens here.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
@@ -19,16 +18,13 @@ import type {
 } from "@shrimpler/core";
 import { FocusContext, setFocus, useBackHandler, useFocusable } from "../focus";
 import { BackButton } from "../components/BackButton";
+import { Badge, Callout } from "../ui";
 import { Html5VideoPlayerAdapter } from "../players/html5-video";
 import type { Route } from "../navigation";
 
 const SCREEN_FOCUS_KEY = "PLAYER";
 const PLAYPAUSE_FOCUS_KEY = "PLAYER_PLAYPAUSE";
 const BACK_FOCUS_KEY = "PLAYER_BACK";
-
-const focusOutline = (focused: boolean): CSSProperties => ({
-  outline: focused ? "2px solid #fff" : "2px solid transparent",
-});
 
 /** Seconds → m:ss (or h:mm:ss) for the transport readout. */
 function formatTime(totalSec: number): string {
@@ -56,6 +52,14 @@ interface PlaybackScreenProps {
   back: Route;
   onNavigate: (route: Route) => void;
 }
+
+const timeReadout: CSSProperties = {
+  fontVariantNumeric: "tabular-nums",
+  fontSize: "var(--fs-small)",
+  color: "var(--sand-dim)",
+  minWidth: 52,
+  textAlign: "center",
+};
 
 export function PlaybackScreen({
   source,
@@ -87,8 +91,6 @@ export function PlaybackScreen({
     name: title,
     poster,
   });
-  // Mirror the live values into refs so the player-lifetime effect (keyed on
-  // source) can read the latest without re-subscribing.
   const recordRef = useRef(record);
   recordRef.current = record;
   const flushRef = useRef(flush);
@@ -109,7 +111,8 @@ export function PlaybackScreen({
     const element = player.element;
     element.controls = false;
     element.style.width = "100%";
-    element.style.maxHeight = "80vh";
+    element.style.height = "100%";
+    element.style.objectFit = "contain";
     element.style.background = "#000";
     containerRef.current?.appendChild(element);
 
@@ -120,7 +123,6 @@ export function PlaybackScreen({
       }
     };
 
-    // Continue-watching is meaningless for live — skip all persistence.
     const live = source.kind === "live";
 
     const unsubscribe = [
@@ -131,11 +133,9 @@ export function PlaybackScreen({
           setDuration(p.durationSec);
         }
         trackPosition(p.positionSec);
-        // Recovering from a live stall clears the reconnecting indicator.
         if (p.status === "playing") {
           setReconnecting(false);
         }
-        // A pause is a good moment to persist the exact position (VOD only).
         if (!live && p.status === "paused") {
           flushRef.current(positionRef.current, durationRef.current);
         }
@@ -149,7 +149,6 @@ export function PlaybackScreen({
       player.on("reconnecting", () => setReconnecting(true)),
       player.on("ended", () => {
         setStatus("ended");
-        // At/near the end this evicts the entry (finished) in the library.
         if (!live) {
           flushRef.current(durationRef.current, durationRef.current);
         }
@@ -157,12 +156,10 @@ export function PlaybackScreen({
       player.on("error", (p) => {
         if (p.error?.fatal === true) {
           if (import.meta.env.DEV) {
-            console.warn(
-              "[playback] fatal",
-              p.error?.code,
-              p.error?.message,
-              { url: source.url, kind: source.kind },
-            );
+            console.warn("[playback] fatal", p.error?.code, p.error?.message, {
+              url: source.url,
+              kind: source.kind,
+            });
           }
           setError(labels.playbackError);
         }
@@ -178,7 +175,6 @@ export function PlaybackScreen({
       for (const dispose of unsubscribe) {
         dispose();
       }
-      // Persist the final position before tearing down (e.g. Back mid-playback).
       if (!live) {
         flushRef.current(positionRef.current, durationRef.current);
       }
@@ -187,8 +183,8 @@ export function PlaybackScreen({
     };
   }, [source]);
 
-  // Resume once both the saved position and the media duration are known; seek
-  // a single time so it doesn't fight the user scrubbing.
+  // Resume once both the saved position and the media duration are known; seek a
+  // single time so it doesn't fight the user scrubbing.
   useEffect(() => {
     if (
       !isLive &&
@@ -242,67 +238,111 @@ export function PlaybackScreen({
 
   return (
     <FocusContext.Provider value={focusKey}>
-      <main ref={ref} style={{ padding: "1rem" }}>
-        <header style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+      <main
+        ref={ref}
+        style={{
+          minHeight: "100%",
+          display: "flex",
+          flexDirection: "column",
+          background: "#000",
+        }}
+      >
+        <header
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 2,
+            display: "flex",
+            gap: "1rem",
+            alignItems: "center",
+            padding: "1rem",
+            background: "linear-gradient(180deg, rgba(0,0,0,0.6), transparent)",
+          }}
+        >
           <BackButton onBack={goBack} focusKey={BACK_FOCUS_KEY} />
-          {source.title !== undefined && <h1>{source.title}</h1>}
-          {isLive && (
-            <span
-              style={{
-                padding: "0.1rem 0.4rem",
-                background: "#c33",
-                color: "#fff",
-                borderRadius: "3px",
-                fontSize: "0.8rem",
-                textTransform: "uppercase",
-              }}
-            >
-              {labels.live}
-            </span>
+          {source.title !== undefined && (
+            <h1 style={{ fontSize: "var(--fs-h2)", fontWeight: 700 }}>
+              {source.title}
+            </h1>
           )}
+          {isLive && <Badge tone="live">{labels.live}</Badge>}
         </header>
 
-        <div ref={containerRef} style={{ margin: "1rem 0" }} />
+        <div
+          ref={containerRef}
+          style={{ flex: 1, minHeight: 0, display: "flex" }}
+        />
 
-        {error !== null ? (
-          <p role="alert" style={{ color: "#e66" }}>
-            {error}
-          </p>
-        ) : (
-          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-            <button
-              ref={playPause.ref}
-              type="button"
-              data-focused={playPause.focused}
-              onClick={togglePlay}
-              style={focusOutline(playPause.focused)}
+        <div
+          style={{
+            padding: "1rem 1.25rem 1.5rem",
+            background: "linear-gradient(0deg, rgba(0,0,0,0.75), transparent)",
+          }}
+        >
+          {error !== null ? (
+            <Callout tone="error" role="alert" style={{ margin: 0 }}>
+              {error}
+            </Callout>
+          ) : (
+            <div
+              style={{ display: "flex", gap: "1rem", alignItems: "center" }}
             >
-              {isPlaying ? labels.pause : labels.play}
-            </button>
-            <span>{formatTime(position)}</span>
-            <input
-              ref={seekBar.ref}
-              type="range"
-              min={0}
-              max={seekable ? duration : 0}
-              step={1}
-              value={Math.min(position, seekable ? duration : 0)}
-              data-focused={seekBar.focused}
-              disabled={!seekable}
-              onChange={(e) => onSeek(Number(e.target.value))}
-              style={{ ...focusOutline(seekBar.focused), flex: 1 }}
-              aria-label={labels.play}
-            />
-            <span>{seekable ? formatTime(duration) : "--:--"}</span>
-          </div>
-        )}
+              <button
+                ref={playPause.ref}
+                type="button"
+                data-focused={playPause.focused}
+                onClick={togglePlay}
+                aria-label={isPlaying ? labels.pause : labels.play}
+                style={{
+                  width: 48,
+                  height: 48,
+                  flexShrink: 0,
+                  borderRadius: "50%",
+                  background:
+                    "linear-gradient(180deg, var(--coral), var(--coral-deep))",
+                  color: "var(--bg)",
+                  fontSize: "1.1rem",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <span aria-hidden>{isPlaying ? "❚❚" : "▶"}</span>
+              </button>
+              <span style={timeReadout}>{formatTime(position)}</span>
+              <input
+                ref={seekBar.ref}
+                className="reef-seek"
+                type="range"
+                min={0}
+                max={seekable ? duration : 0}
+                step={1}
+                value={Math.min(position, seekable ? duration : 0)}
+                data-focused={seekBar.focused}
+                disabled={!seekable}
+                onChange={(e) => onSeek(Number(e.target.value))}
+                style={{ flex: 1 }}
+                aria-label={labels.play}
+              />
+              <span style={timeReadout}>
+                {seekable ? formatTime(duration) : "--:--"}
+              </span>
+            </div>
+          )}
 
-        {status === "loading" && error === null && (
-          <p role="status">{labels.playbackLoading}</p>
-        )}
-        {reconnecting && error === null && (
-          <p role="status">{labels.reconnecting}</p>
-        )}
+          {status === "loading" && error === null && (
+            <Callout tone="status" role="status" style={{ marginBottom: 0 }}>
+              {labels.playbackLoading}
+            </Callout>
+          )}
+          {reconnecting && error === null && (
+            <Callout tone="status" role="status" style={{ marginBottom: 0 }}>
+              {labels.reconnecting}
+            </Callout>
+          )}
+        </div>
       </main>
     </FocusContext.Provider>
   );

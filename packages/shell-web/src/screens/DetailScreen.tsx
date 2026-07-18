@@ -3,29 +3,24 @@
 // Shows resolved MetaDetail (addon-meta-first, TMDB gap-fill — ADR-0003) and,
 // for series, the episode list grouped by season. The primary action opens the
 // stream picker: a single Play button for movies and live channels, and per-row
-// for series episodes. Copy routes through the labels module (§9.2 / ADR-0007);
-// focus follows the AddonManagerScreen conventions.
+// for series episodes. Copy routes through the labels module (§9.2 / ADR-0007).
 
 import { useCallback, useEffect, useState } from "react";
-import type { CSSProperties } from "react";
 import { labels, useDetail } from "@shrimpler/shared-ui";
 import type {
   ContentId,
   EpisodeRef,
   MediaType,
+  MetaDetail,
   PlayableSource,
 } from "@shrimpler/core";
-import { FocusContext, setFocus, useBackHandler, useFocusable } from "../focus";
-import { BackButton } from "../components/BackButton";
+import { setFocus, useBackHandler } from "../focus";
 import { StreamPickerOverlay } from "../components/StreamPickerOverlay";
+import { Button, Callout, ListRow, Screen } from "../ui";
 import type { NavigationProps } from "../navigation";
 
 const SCREEN_FOCUS_KEY = "DETAIL";
 const BACK_FOCUS_KEY = "DETAIL_BACK";
-
-const focusOutline = (focused: boolean): CSSProperties => ({
-  outline: focused ? "2px solid #fff" : "2px solid transparent",
-});
 
 interface DetailScreenProps extends NavigationProps {
   id: ContentId;
@@ -40,66 +35,6 @@ function seasonsOf(episodes: readonly EpisodeRef[]): number[] {
   return [...seasons].sort((a, b) => a - b);
 }
 
-function SeasonTab({
-  season,
-  active,
-  onSelect,
-}: {
-  season: number;
-  active: boolean;
-  onSelect: (season: number) => void;
-}) {
-  const { ref, focused } = useFocusable<object, HTMLButtonElement>({
-    onEnterPress: () => onSelect(season),
-  });
-  return (
-    <button
-      ref={ref}
-      type="button"
-      data-focused={focused}
-      aria-pressed={active}
-      onClick={() => onSelect(season)}
-      style={{
-        ...focusOutline(focused),
-        fontWeight: active ? "bold" : "normal",
-      }}
-    >
-      {labels.seasonLabel} {season}
-    </button>
-  );
-}
-
-function EpisodeRow({
-  episode,
-  onPlay,
-}: {
-  episode: EpisodeRef;
-  onPlay: (id: ContentId) => void;
-}) {
-  const { ref, focused } = useFocusable<object, HTMLLIElement>({
-    onEnterPress: () => onPlay(episode.id),
-  });
-  return (
-    <li
-      ref={ref}
-      data-focused={focused}
-      data-episode={episode.id}
-      onClick={() => onPlay(episode.id)}
-      style={{
-        ...focusOutline(focused),
-        padding: "0.5rem 0",
-        cursor: "pointer",
-      }}
-    >
-      <strong>
-        {episode.episode}
-        {episode.name !== undefined ? `. ${episode.name}` : ""}
-      </strong>
-      {episode.overview !== undefined && <p>{episode.overview}</p>}
-    </li>
-  );
-}
-
 function EpisodesSection({
   episodes,
   onPlay,
@@ -110,14 +45,10 @@ function EpisodesSection({
   const seasons = seasonsOf(episodes);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
 
-  // Reset the manual selection when the episode set changes (e.g. a new series
-  // opened in the same screen instance); the effective season falls back to the
-  // first one below.
   useEffect(() => {
     setSelectedSeason(null);
   }, [episodes]);
 
-  // Never show every season at once — default to the first until the user picks.
   const activeSeason = selectedSeason ?? seasons[0] ?? null;
   const visible =
     activeSeason === null
@@ -125,41 +56,48 @@ function EpisodesSection({
       : episodes.filter((e) => e.season === activeSeason);
 
   return (
-    <section>
-      <h2>{labels.episodesTitle}</h2>
+    <section style={{ marginTop: "2rem" }}>
+      <h2 style={{ fontSize: "var(--fs-h2)", fontWeight: 700, marginBottom: "0.75rem" }}>
+        {labels.episodesTitle}
+      </h2>
       {seasons.length > 1 && (
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.85rem" }}>
           {seasons.map((season) => (
-            <SeasonTab
+            <Button
               key={season}
-              season={season}
-              active={season === activeSeason}
-              onSelect={setSelectedSeason}
-            />
+              size="sm"
+              variant={season === activeSeason ? "primary" : "subtle"}
+              aria-pressed={season === activeSeason}
+              onPress={() => setSelectedSeason(season)}
+            >
+              {`${labels.seasonLabel} ${season}`}
+            </Button>
           ))}
         </div>
       )}
-      <ul style={{ listStyle: "none", padding: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
         {visible.map((episode) => (
-          <EpisodeRow key={episode.id} episode={episode} onPlay={onPlay} />
+          <ListRow
+            key={episode.id}
+            data-episode={episode.id}
+            title={
+              <strong>
+                {episode.episode}
+                {episode.name !== undefined ? `. ${episode.name}` : ""}
+              </strong>
+            }
+            subtitle={episode.overview}
+            onPress={() => onPlay(episode.id)}
+          />
         ))}
-      </ul>
+      </div>
     </section>
   );
 }
 
 export function DetailScreen({ onNavigate, id, type }: DetailScreenProps) {
-  const { detail, episodes, isLoading, error, hasProvider } = useDetail(
-    id,
-    type,
-  );
-  const { ref, focusKey } = useFocusable<object, HTMLElement>({
-    focusKey: SCREEN_FOCUS_KEY,
-    saveLastFocusedChild: true,
-  });
+  const { detail, episodes, isLoading, error, hasProvider } = useDetail(id, type);
 
-  // Which content the stream picker overlay is open for (null = closed). A movie
-  // opens on its own id; a series opens per episode.
   const [picker, setPicker] = useState<{
     id: ContentId;
     type: MediaType;
@@ -177,8 +115,6 @@ export function DetailScreen({ onNavigate, id, type }: DetailScreenProps) {
         source,
         contentId,
         type: contentType,
-        // Display snapshot for the continue-watching row (the show name/poster
-        // for a series episode too).
         title: detail?.name,
         poster: detail?.poster,
         back: { screen: "detail", id, type },
@@ -187,12 +123,7 @@ export function DetailScreen({ onNavigate, id, type }: DetailScreenProps) {
     [onNavigate, id, type, detail?.name, detail?.poster],
   );
 
-  // A single-source Play action for everything that isn't a series (movies and
-  // live channels). A series plays per-episode via the episodes list below.
   const isDirectlyPlayable = type !== "series";
-  const playButton = useFocusable<object, HTMLButtonElement>({
-    onEnterPress: () => openPicker(id, type),
-  });
 
   const goHome = () => onNavigate({ screen: "home" });
   useBackHandler(goHome);
@@ -201,84 +132,36 @@ export function DetailScreen({ onNavigate, id, type }: DetailScreenProps) {
     void setFocus(BACK_FOCUS_KEY);
   }, []);
 
-  const metaLine =
-    detail === null
-      ? []
-      : [
-          detail.released ?? detail.releaseInfo,
-          detail.runtime,
-          detail.imdbRating !== undefined
-            ? `★ ${detail.imdbRating}`
-            : undefined,
-        ].filter((part): part is string => part !== undefined && part !== "");
-
   return (
-    <FocusContext.Provider value={focusKey}>
-      <main ref={ref} style={{ padding: "1rem" }}>
-        <header style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-          <BackButton onBack={goHome} focusKey={BACK_FOCUS_KEY} />
-          {detail !== null && <h1>{detail.name}</h1>}
-        </header>
+    <Screen
+      focusKey={SCREEN_FOCUS_KEY}
+      title={detail?.name}
+      onBack={goHome}
+      backFocusKey={BACK_FOCUS_KEY}
+    >
+      {isLoading ? (
+        <Callout tone="status">{labels.detailLoading}</Callout>
+      ) : error !== null ? (
+        <Callout tone="error" role="alert">
+          {error}
+        </Callout>
+      ) : detail === null ? (
+        <>
+          <Callout tone="muted">{labels.detailEmpty}</Callout>
+          {!hasProvider && (
+            <Callout tone="muted">{labels.detailNoProviderHint}</Callout>
+          )}
+        </>
+      ) : (
+        <DetailBody
+          detail={detail}
+          episodes={episodes}
+          isDirectlyPlayable={isDirectlyPlayable}
+          onPlayMain={() => openPicker(id, type)}
+          onPlayEpisode={(episodeId) => openPicker(episodeId, "series")}
+        />
+      )}
 
-        {isLoading ? (
-          <p>{labels.detailLoading}</p>
-        ) : error !== null ? (
-          <p role="alert" style={{ color: "#e66" }}>
-            {error}
-          </p>
-        ) : detail === null ? (
-          <>
-            <p>{labels.detailEmpty}</p>
-            {!hasProvider && <p>{labels.detailNoProviderHint}</p>}
-          </>
-        ) : (
-          <>
-            {detail.background !== undefined && (
-              <img
-                src={detail.background}
-                alt=""
-                style={{ maxWidth: "100%", display: "block" }}
-              />
-            )}
-            {detail.poster !== undefined && (
-              <img
-                src={detail.poster}
-                alt=""
-                style={{ maxWidth: "200px", display: "block" }}
-              />
-            )}
-            {metaLine.length > 0 && <p>{metaLine.join(" · ")}</p>}
-            {isDirectlyPlayable && (
-              <button
-                ref={playButton.ref}
-                type="button"
-                data-focused={playButton.focused}
-                onClick={() => openPicker(id, type)}
-                style={focusOutline(playButton.focused)}
-              >
-                {labels.play}
-              </button>
-            )}
-            {detail.genres !== undefined && detail.genres.length > 0 && (
-              <p>
-                {labels.genresTitle}: {detail.genres.join(", ")}
-              </p>
-            )}
-            {detail.description !== undefined && <p>{detail.description}</p>}
-            {detail.cast !== undefined && detail.cast.length > 0 && (
-              <p>
-                {labels.castTitle}: {detail.cast.join(", ")}
-              </p>
-            )}
-            {episodes.length > 0 && (
-              <EpisodesSection
-                episodes={episodes}
-                onPlay={(episodeId) => openPicker(episodeId, "series")}
-              />
-            )}
-          </>
-        )}
-      </main>
       {picker !== null && (
         <StreamPickerOverlay
           id={picker.id}
@@ -287,6 +170,98 @@ export function DetailScreen({ onNavigate, id, type }: DetailScreenProps) {
           onPlay={handlePlay}
         />
       )}
-    </FocusContext.Provider>
+    </Screen>
+  );
+}
+
+function DetailBody({
+  detail,
+  episodes,
+  isDirectlyPlayable,
+  onPlayMain,
+  onPlayEpisode,
+}: {
+  detail: MetaDetail;
+  episodes: readonly EpisodeRef[];
+  isDirectlyPlayable: boolean;
+  onPlayMain: () => void;
+  onPlayEpisode: (id: ContentId) => void;
+}) {
+  const metaLine = [
+    detail.released ?? detail.releaseInfo,
+    detail.runtime,
+    detail.imdbRating !== undefined ? `★ ${detail.imdbRating}` : undefined,
+  ].filter((p): p is string => p !== undefined && p !== "");
+
+  return (
+    <>
+      {detail.background !== undefined && (
+        <div
+          style={{
+            position: "relative",
+            borderRadius: "var(--r-lg)",
+            overflow: "hidden",
+            marginBottom: "1.25rem",
+          }}
+        >
+          <img
+            src={detail.background}
+            alt=""
+            style={{ width: "100%", maxHeight: 360, objectFit: "cover", display: "block" }}
+          />
+          <span
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(180deg, rgba(14,26,30,0) 35%, var(--bg))",
+            }}
+          />
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: "1.25rem", flexWrap: "wrap" }}>
+        {detail.poster !== undefined && (
+          <img
+            src={detail.poster}
+            alt=""
+            style={{
+              width: 180,
+              borderRadius: "var(--r-md)",
+              boxShadow: "var(--shadow)",
+              flexShrink: 0,
+            }}
+          />
+        )}
+        <div style={{ flex: "1 1 280px", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+          {metaLine.length > 0 && (
+            <p style={{ color: "var(--sand-dim)" }}>{metaLine.join("  ·  ")}</p>
+          )}
+          {isDirectlyPlayable && (
+            <div>
+              <Button onPress={onPlayMain}>
+                <span aria-hidden>▶</span> {labels.play}
+              </Button>
+            </div>
+          )}
+          {detail.genres !== undefined && detail.genres.length > 0 && (
+            <p style={{ color: "var(--sand-dim)", fontSize: "var(--fs-small)" }}>
+              {labels.genresTitle}: {detail.genres.join(", ")}
+            </p>
+          )}
+          {detail.description !== undefined && <p>{detail.description}</p>}
+          {detail.cast !== undefined && detail.cast.length > 0 && (
+            <p style={{ color: "var(--sand-dim)", fontSize: "var(--fs-small)" }}>
+              {labels.castTitle}: {detail.cast.join(", ")}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {episodes.length > 0 && (
+        <EpisodesSection episodes={episodes} onPlay={onPlayEpisode} />
+      )}
+    </>
   );
 }
