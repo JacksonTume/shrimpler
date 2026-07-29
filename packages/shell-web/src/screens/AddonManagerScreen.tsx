@@ -18,8 +18,9 @@ import type {
   XtreamAccount,
 } from "@shrimpler/core";
 import { setFocus, useBackHandler } from "../focus";
-import { Button, Callout, Screen, TextField } from "../ui";
+import { Button, Callout, Card, Screen, TextField } from "../ui";
 import type { NavigationProps } from "../navigation";
+import { isIptvEnabled } from "../features";
 
 const SCREEN_FOCUS_KEY = "ADDONS";
 const INPUT_FOCUS_KEY = "ADDONS_INPUT";
@@ -27,27 +28,6 @@ const INPUT_FOCUS_KEY = "ADDONS_INPUT";
 export interface AddonManagerScreenProps extends NavigationProps {
   /** Rebuilds the core so a new/removed IPTV playlist's channels take effect. */
   reloadCore: () => Promise<void>;
-}
-
-function Card({ title, children }: { title?: string; children: ReactNode }) {
-  return (
-    <section
-      style={{
-        background: "var(--surface)",
-        border: "1px solid var(--line)",
-        borderRadius: "var(--r-lg)",
-        padding: "1.25rem",
-        marginBottom: "1.25rem",
-      }}
-    >
-      {title !== undefined && (
-        <h2 style={{ fontSize: "var(--fs-h2)", fontWeight: 700, marginBottom: "0.85rem" }}>
-          {title}
-        </h2>
-      )}
-      {children}
-    </section>
-  );
 }
 
 /** A managed-entry row: a label and trailing action buttons. */
@@ -386,8 +366,14 @@ export function AddonManagerScreen({
         )}
       </Card>
 
-      <IptvPlaylistsSection reloadCore={reloadCore} />
-      <IptvXtreamSection reloadCore={reloadCore} />
+      {/* Hidden while the IPTV subsystem is gated off (features.ts) — adding a
+          source there would do nothing, since nothing refreshes it. */}
+      {isIptvEnabled() && (
+        <>
+          <IptvPlaylistsSection reloadCore={reloadCore} />
+          <IptvXtreamSection reloadCore={reloadCore} />
+        </>
+      )}
     </Screen>
   );
 }

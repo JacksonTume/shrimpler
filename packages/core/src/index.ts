@@ -3,7 +3,7 @@
 // here only — deep imports into module internals are not part of the contract.
 
 export { createCore } from "./create-core";
-export type { Core, CoreDependencies } from "./create-core";
+export type { Core, CoreDependencies, CoreFeatures } from "./create-core";
 
 export type {
   ContentId,

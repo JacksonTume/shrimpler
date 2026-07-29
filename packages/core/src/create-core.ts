@@ -29,9 +29,26 @@ import type {
   AddonEngineTimeouts,
 } from "./addon/index";
 
+/**
+ * Subsystem gates, decided by the shell at composition time (ADR-0001: the shell
+ * chooses, core receives). Every flag defaults to on — a shell opts *out*.
+ */
+export interface CoreFeatures {
+  /**
+   * IPTV + EPG (§8, ADR-0006/ADR-0015). When false the internal IPTV addon is
+   * not built and `iptv.refresh`/`epg.refresh` become no-ops, so no user
+   * playlist, Xtream account, or XMLTV guide host is contacted — the reason to
+   * turn it off is to keep dev builds from hammering those servers. Persisted
+   * source config is left untouched, so flipping it back on restores everything.
+   */
+  iptv?: boolean;
+}
+
 export interface CoreDependencies {
   storage: StorageAdapter;
   http: HttpAdapter;
+  /** Subsystem gates; omitted or partial means "everything on". */
+  features?: CoreFeatures;
   /**
    * Storage for the (potentially large, multi-MB) IPTV content-snapshot cache.
    * Defaults to `storage`; on web the shell points this at IndexedDB so big
@@ -104,6 +121,7 @@ export interface Core {
  * on startup (see createAddonEngine); the returned Core has a ready engine.
  */
 export async function createCore(deps: CoreDependencies): Promise<Core> {
+  const iptvEnabled = deps.features?.iptv ?? true;
   // IPTV content-snapshot cache (backed by iptvCacheStorage, or storage). The
   // addon is built cache-only from persisted snapshots (instant, no network);
   // the network fetch happens in core.iptv.refresh() in the background.
@@ -112,11 +130,15 @@ export async function createCore(deps: CoreDependencies): Promise<Core> {
     now: deps.now,
     onError: deps.onError,
   });
-  const iptvAddon = await buildIptvAddon({
-    http: deps.http,
-    storage: deps.storage,
-    cache: iptvCache,
-  });
+  // Gated off ⇒ no internal addon at all, so IPTV catalogs, live streams, and
+  // the Xtream lazy episode loaders never reach the engine (and never fetch).
+  const iptvAddon = iptvEnabled
+    ? await buildIptvAddon({
+        http: deps.http,
+        storage: deps.storage,
+        cache: iptvCache,
+      })
+    : undefined;
   const addons = await createAddonEngine({
     http: deps.http,
     storage: deps.storage,
@@ -142,6 +164,7 @@ export async function createCore(deps: CoreDependencies): Promise<Core> {
     cache: iptvCache,
     now: deps.now,
     onError: deps.onError,
+    enabled: iptvEnabled,
   });
   // EPG shares the IPTV cache storage (IndexedDB on web) and reads channels from
   // the IPTV content snapshots the cache already holds — no playlist re-parse.
@@ -156,6 +179,7 @@ export async function createCore(deps: CoreDependencies): Promise<Core> {
       listEpgSources({ storage: deps.storage, iptvCache }),
     now: deps.now,
     onError: deps.onError,
+    enabled: iptvEnabled,
   });
   return {
     adapters: {

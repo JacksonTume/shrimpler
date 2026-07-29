@@ -16,6 +16,14 @@ export const labels = {
   emptyHome: "No sources added",
   emptyHomeHint: "Add a playlist to get started.",
 
+  // Home-screen groups: the two worlds are surfaced as separate cards. "Add-ons"
+  // is the metadata search + stream side (Stremio engine + TMDB); "Live TV" is the
+  // IPTV catalogs (live/movies/series from user playlists).
+  homeAddonsGroup: "Add-ons",
+  homeAddonsHint: "Search and stream from the sources you add.",
+  homeLiveGroup: "Live TV",
+  homeLiveHint: "Browse live channels, movies, and series from your playlists.",
+
   // Continue-watching row on the home screen (§10 step 8, ADR-0014). Populated
   // from local watch progress; empty until the user has played something.
   continueWatching: "Continue watching",

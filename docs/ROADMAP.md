@@ -6,7 +6,7 @@ honest — this file is the entry point for anyone (human or agent) picking up
 work. Architectural decisions live in [adr/](adr/README.md); do not re-litigate
 them here.
 
-_Last updated: 2026-07-18_
+_Last updated: 2026-07-29_
 
 ## Phase 0 — Foundations ✅ complete
 
@@ -97,6 +97,18 @@ Built iteratively, one shippable increment at a time. **TV is shelved** to
 Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
 **mobile** (Expo dev client, Android first). See the increment plan for details.
 
+> **IPTV work is paused (2026-07-29), and the subsystem is gated off by
+> default.** It refreshes playlists/Xtream catalogs and fetches XMLTV guides on
+> every app start, which puts steady load on real subscription servers each time
+> a dev build starts or reloads — not worth paying while nobody is working on it.
+> The gate is `CoreFeatures.iptv` (a `createCore` dependency; the shell decides,
+> per ADR-0001), resolved in the web shell by `shell-web/src/features.ts` from
+> `VITE_IPTV_ENABLED`. Off means: no internal IPTV addon, `iptv.refresh` and
+> `epg.refresh` are no-ops (`force` included), and no Live TV surfaces in the UI.
+> Saved playlists and Xtream accounts are left untouched, so setting
+> `VITE_IPTV_ENABLED=true` in a git-ignored `.env` restores the previous state.
+> The unfinished IPTV items below stay open — they are deferred, not dropped.
+
 - [x] IPTV internal addon (ADR-0006), increment 1 — M3U/M3U8 parser
       (`core/src/iptv`), the `InternalAddon` engine seam, `core.iptv` playlist
       config, the `resolveStreamId` pass-through fix, and a web browse surface
@@ -118,7 +130,7 @@ Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
       wrapper often serves a black placeholder); a **dev-only** Vite CORS proxy
       (`vite-plugin-iptv-proxy.ts`) since IPTV hosts omit `Access-Control-Allow-
       Origin`; and a muted-autoplay fallback
-- [ ] **Live playback performance** — web live is playable but **choppy**;
+- [ ] ⏸ **Live playback performance** (paused) — web live is playable but **choppy**;
       needs work. Baseline tuning already exists (`mpegts-engine.ts` sets
       `enableStashBuffer: !isLive` + `liveBufferLatencyChasing: isLive`, and
       `html5-video.ts` has a muted-autoplay fallback). Remaining levers:
@@ -131,9 +143,10 @@ Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
       `HttpAdapter` (fetch), `PlayerAdapter` (`react-native-video`, native HLS +
       honors headers) — each tested; the `createRnCore` composition root; the
       navigation route union; and `HomeScreen`. Remaining: the `search`, `detail`,
-      `catalog`, `player`, `settings`, and `addons` screens (reusing every
-      `shared-ui` hook) plus the `App.tsx` route stack, to reach VOD + IPTV parity
-      on mobile
+      `player`, `settings`, and `addons` screens (reusing every `shared-ui` hook)
+      plus the `App.tsx` route stack, to reach **VOD** parity on mobile. The
+      `catalog`/`categories` screens are IPTV-only and come with the paused IPTV
+      work, not here — `createRnCore` passes `features: { iptv: false }`
 - [x] EPG pipeline (streaming XMLTV parse, tvg-id matching), increment 1 —
       `HttpAdapter.getTextStream` streaming seam (gzip in the shell, DOM-less
       core), `core/src/epg` (incremental parser, tvg-id + fuzzy match,
@@ -159,10 +172,12 @@ Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
       playback) with all `data-*`/label test hooks preserved; bundled Space Grotesk
       + Inter. Removed the dev-only content-id opener + focus-spike toggle. The RN
       port should mirror this. **Ongoing — more polish to come** (2026-07-18)
-- [ ] **IPTV live stream selection bug** — playing a live channel can play the
-      wrong stream (e.g. selecting an "NZ" channel plays a different one). Points
-      at a channel-id → stream mismatch on the internal-addon live path
-      (`getStreams`/`resolveStreamId`, ADR-0006). To investigate next
+- [ ] ⏸ **IPTV live stream selection bug** (paused) — playing a live channel can
+      play the wrong stream (e.g. selecting an "NZ" channel plays a different
+      one). Points at a channel-id → stream mismatch on the internal-addon live
+      path (`getStreams`/`resolveStreamId`, ADR-0006). First item to pick up
+      whenever IPTV work resumes — investigate before building anything further
+      on the live path
 
 ## Phase 3 — Breadth & polish
 

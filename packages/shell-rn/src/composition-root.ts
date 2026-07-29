@@ -58,6 +58,12 @@ export async function createRnCore(): Promise<Core> {
   return createCore({
     storage,
     http,
+    // IPTV work is paused and the subsystem is gated off project-wide, so a dev
+    // client doesn't refresh playlists/EPG against real subscription servers on
+    // every launch. Web has an env opt-in (VITE_IPTV_ENABLED); RN has no
+    // build-time env, so flip this constant when the work resumes and the
+    // screens land.
+    features: { iptv: false },
     playerFactory: () => new RnVideoPlayerAdapter(),
     providers: await metadataProviders(http, storage),
     debrid: await debridProvider(http, storage),

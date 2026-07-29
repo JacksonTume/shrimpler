@@ -18,6 +18,7 @@ import {
 } from "@shrimpler/shared-ui";
 import { Html5VideoPlayerAdapter } from "./players/html5-video";
 import { IdbStorageAdapter } from "./adapters/idb-storage";
+import { isIptvEnabled } from "./features";
 
 const STORAGE_PREFIX = "shrimpler:";
 
@@ -226,6 +227,9 @@ export async function createWebCore(): Promise<Core> {
   return createCore({
     storage,
     http,
+    // Off by default (features.ts): no internal IPTV addon and no background
+    // playlist/EPG refresh, so dev builds stay off real subscription servers.
+    features: { iptv: isIptvEnabled() },
     // Large IPTV content snapshots go to IndexedDB (localStorage would overflow);
     // it falls back to `storage` if IndexedDB is unavailable (ADR-0006).
     iptvCacheStorage: new IdbStorageAdapter(storage),

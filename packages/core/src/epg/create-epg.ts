@@ -55,6 +55,8 @@ export interface EpgService {
    * Fetch each stale/missing source's EPG, match it to that source's channels, and
    * persist the derived snapshot. TTL-gated and deduped; `{ force: true }` ignores
    * the TTL. Returns whether any snapshot changed (so the shell can react).
+   * Gated off (CoreFeatures.iptv) this resolves `{ changed: false }` without
+   * touching the network — `force` included.
    */
   refresh(options?: { force?: boolean }): Promise<{ changed: boolean }>;
   /**
@@ -78,10 +80,18 @@ export interface CreateEpgServiceDeps {
   pastMs?: number;
   futureMs?: number;
   onError?: AddonEngineErrorHandler;
+  /**
+   * Whether the subsystem is on (CoreFeatures.iptv); default true. False makes
+   * `refresh` a no-op. `getNowNext` needs no gate: it only reads cached
+   * snapshots, and a gated-off core builds no IPTV addon, so no live row exists
+   * to ask about.
+   */
+  enabled?: boolean;
 }
 
 export function createEpgService(deps: CreateEpgServiceDeps): EpgService {
   const { http, cache, listSources, onError } = deps;
+  const enabled = deps.enabled ?? true;
   const now = deps.now ?? (() => Date.now());
   const ttlMs = deps.ttlMs ?? DEFAULT_EPG_STALE_TTL_MS;
   const pastMs = deps.pastMs ?? DEFAULT_PAST_MS;
@@ -135,6 +145,9 @@ export function createEpgService(deps: CreateEpgServiceDeps): EpgService {
 
   return {
     refresh(options?: { force?: boolean }): Promise<{ changed: boolean }> {
+      if (!enabled) {
+        return Promise.resolve({ changed: false });
+      }
       const force = options?.force ?? false;
       if (!force && inFlight !== null) return inFlight;
       const run = runRefresh(force).finally(() => {

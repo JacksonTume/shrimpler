@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Integration test for the home screen's continue-watching row against a fake
 // Library, with the real focus engine initialized. Verifies the row renders from
-// stored progress and that selecting a card navigates to the detail screen.
+// stored progress and that selecting a card navigates to the detail screen, plus
+// that the Live TV tiles follow the IPTV feature gate (features.ts).
 
 import {
   cleanup,
@@ -74,5 +75,44 @@ describe("HomeScreen continue-watching", () => {
     await waitFor(() =>
       expect(screen.queryByText(labels.continueWatching)).toBeNull(),
     );
+  });
+});
+
+describe("HomeScreen IPTV gate", () => {
+  beforeEach(() => {
+    initFocusEngine();
+  });
+  afterEach(() => {
+    cleanup();
+    destroyFocusEngine();
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("hides the Live TV tiles by default (subsystem gated off)", () => {
+    renderHome([], () => {});
+    // Assert on the hint, not the card title — the title and the tile share the
+    // "Live TV" string, so a text match on it is ambiguous once rendered.
+    expect(screen.queryByText(labels.homeLiveHint)).toBeNull();
+    expect(screen.queryByRole("button", { name: labels.liveTv })).toBeNull();
+    // Search stays reachable — the gate is IPTV-only.
+    expect(
+      screen.getByRole("button", { name: labels.searchTitle }),
+    ).toBeDefined();
+  });
+
+  it("shows them when VITE_IPTV_ENABLED opts in", () => {
+    vi.stubEnv("VITE_IPTV_ENABLED", "true");
+    const onNavigate = vi.fn();
+    renderHome([], onNavigate);
+
+    expect(screen.getByText(labels.homeLiveHint)).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: labels.liveTv }));
+    expect(onNavigate).toHaveBeenCalledWith({
+      screen: "categories",
+      catalogType: "tv",
+      catalogId: "iptv:live",
+      title: labels.liveTv,
+    });
   });
 });

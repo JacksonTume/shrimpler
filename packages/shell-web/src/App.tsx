@@ -13,6 +13,24 @@ import { PlaybackScreen } from "./screens/PlaybackScreen";
 import { Spinner, TideBar } from "./ui";
 import type { Route } from "./navigation";
 import { hashToRoute, routeToHash } from "./route-url";
+import { isIptvEnabled } from "./features";
+
+/** Screens that only exist for IPTV content (the catalog drill-down). */
+const IPTV_SCREENS: ReadonlySet<Route["screen"]> = new Set([
+  "categories",
+  "catalog",
+]);
+
+/**
+ * Send IPTV-only routes home while the subsystem is gated off (features.ts), so
+ * a stale bookmark or a hash left in the address bar can't land on a screen whose
+ * catalogs no longer exist.
+ */
+function allowedRoute(route: Route): Route {
+  return !isIptvEnabled() && IPTV_SCREENS.has(route.screen)
+    ? { screen: "home" }
+    : route;
+}
 
 export interface AppProps {
   /** Rebuilds the composed Core (used by Settings to apply a new TMDB key). */
@@ -116,13 +134,16 @@ function IptvRefreshIndicator({
 
 export function App({ reloadCore }: AppProps) {
   // Serve cached IPTV instantly, then refresh sources in the background and
-  // rebuild the core if anything changed (ADR-0006).
+  // rebuild the core if anything changed (ADR-0006). Gated off, core's refresh is
+  // an immediate no-op — the hook still runs (hook rules) but never fetches, and
+  // the indicator stays hidden rather than flashing on every mount.
+  const iptvEnabled = isIptvEnabled();
   const { isRefreshing, progress } = useIptvRefresh(reloadCore);
   // Hash-based routing (route-url.ts): the Route union stays the in-app source of
   // truth, mirrored to `location.hash` so screens are deep-linkable and survive a
   // reload. Initial route is decoded from the current hash.
   const [route, setRoute] = useState<Route>(() =>
-    hashToRoute(window.location.hash),
+    allowedRoute(hashToRoute(window.location.hash)),
   );
   // navigate() writes the hash we set ourselves; the hashchange listener must
   // ignore that echo and only react to user-driven changes (Back/Forward, edits).
@@ -143,7 +164,7 @@ export function App({ reloadCore }: AppProps) {
         selfHash.current = null;
         return;
       }
-      setRoute(hashToRoute(window.location.hash));
+      setRoute(allowedRoute(hashToRoute(window.location.hash)));
     };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
@@ -151,7 +172,9 @@ export function App({ reloadCore }: AppProps) {
 
   return (
     <>
-      {isRefreshing && <IptvRefreshIndicator progress={progress} />}
+      {iptvEnabled && isRefreshing && (
+        <IptvRefreshIndicator progress={progress} />
+      )}
       {route.screen === "addons" ? (
         <AddonManagerScreen onNavigate={navigate} reloadCore={reloadCore} />
       ) : route.screen === "settings" ? (

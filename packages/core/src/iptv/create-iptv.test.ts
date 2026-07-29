@@ -424,4 +424,32 @@ describe("createIptvService", () => {
     await iptv.removeXtreamAccount(account.host, account.username);
     expect(await cache.readContent(key)).toBeNull();
   });
+
+  it("refreshes nothing over the network when disabled, but keeps config live", async () => {
+    const storage = memoryStorage({
+      [IPTV_PLAYLISTS_STORAGE_KEY]: [
+        { url: "http://p/a.m3u", addedAt: 1 },
+      ] satisfies IptvPlaylist[],
+    });
+    const cache = createIptvContentCache({ storage });
+    const get = vi.fn(() => Promise.resolve(textResponse(PLAYLIST_A)));
+    const http: HttpAdapter = {
+      get,
+      post: () => Promise.reject(new Error("unused")),
+    };
+    const iptv = createIptvService({ storage, http, cache, enabled: false });
+
+    // Even forced — the gate is about never touching the user's IPTV servers.
+    expect(await iptv.refresh({ force: true })).toEqual({ changed: false });
+    expect(get).not.toHaveBeenCalled();
+    expect(await cache.listSourceKeys()).toEqual([]);
+
+    // Saved sources are still readable/writable, so flipping the gate back on
+    // picks up where it left off rather than starting from an empty config.
+    await iptv.addPlaylist("http://p/b.m3u");
+    expect((await iptv.listPlaylists()).map((p) => p.url)).toEqual([
+      "http://p/a.m3u",
+      "http://p/b.m3u",
+    ]);
+  });
 });

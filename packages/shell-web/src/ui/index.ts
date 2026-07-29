@@ -5,6 +5,7 @@
 export { Badge } from "./Badge";
 export { Button } from "./Button";
 export { Callout } from "./Callout";
+export { Card } from "./Card";
 export { Dialog } from "./Dialog";
 export { EmptyState } from "./EmptyState";
 export { ListRow } from "./ListRow";

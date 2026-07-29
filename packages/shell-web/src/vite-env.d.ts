@@ -6,6 +6,8 @@
 interface ImportMetaEnv {
   readonly VITE_TMDB_API_KEY?: string;
   readonly VITE_REALDEBRID_TOKEN?: string;
+  /** Opt in to the IPTV/EPG subsystem ("true"); off otherwise — see features.ts. */
+  readonly VITE_IPTV_ENABLED?: string;
 }
 
 interface ImportMeta {

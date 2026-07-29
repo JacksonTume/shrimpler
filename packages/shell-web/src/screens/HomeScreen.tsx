@@ -8,8 +8,9 @@ import { useEffect } from "react";
 import { labels, useContinueWatching } from "@shrimpler/shared-ui";
 import type { ProgressEntry } from "@shrimpler/core";
 import { setFocus } from "../focus";
-import { Button, PosterCard, Rail, Screen, Wordmark } from "../ui";
+import { Button, Card, PosterCard, Rail, Screen, Wordmark } from "../ui";
 import type { NavigationProps } from "../navigation";
+import { isIptvEnabled } from "../features";
 
 const SCREEN_FOCUS_KEY = "HOME";
 const SEARCH_FOCUS_KEY = "HOME_SEARCH";
@@ -56,6 +57,67 @@ function ContinueWatchingSection({ onNavigate }: NavigationProps) {
 }
 
 const tileStyle = { flex: "1 1 160px" } as const;
+const tileRowStyle = { display: "flex", flexWrap: "wrap", gap: "0.75rem" } as const;
+const groupHintStyle = {
+  margin: "-0.35rem 0 1rem",
+  color: "var(--sand-dim)",
+} as const;
+
+/** IPTV browse tiles. Rendered only while the subsystem is on (features.ts). */
+function LiveTvSection({ onNavigate }: NavigationProps) {
+  return (
+    <Card title={labels.homeLiveGroup}>
+      <p style={groupHintStyle}>{labels.homeLiveHint}</p>
+      <div style={tileRowStyle}>
+        <Button
+          variant="subtle"
+          focusKey={LIVE_FOCUS_KEY}
+          style={tileStyle}
+          onPress={() =>
+            onNavigate({
+              screen: "categories",
+              catalogType: "tv",
+              catalogId: "iptv:live",
+              title: labels.liveTv,
+            })
+          }
+        >
+          {labels.liveTv}
+        </Button>
+        <Button
+          variant="subtle"
+          focusKey={MOVIES_FOCUS_KEY}
+          style={tileStyle}
+          onPress={() =>
+            onNavigate({
+              screen: "categories",
+              catalogType: "movie",
+              catalogId: "iptv:movies",
+              title: labels.moviesTitle,
+            })
+          }
+        >
+          {labels.moviesTitle}
+        </Button>
+        <Button
+          variant="subtle"
+          focusKey={SERIES_FOCUS_KEY}
+          style={tileStyle}
+          onPress={() =>
+            onNavigate({
+              screen: "categories",
+              catalogType: "series",
+              catalogId: "iptv:series",
+              title: labels.seriesTitle,
+            })
+          }
+        >
+          {labels.seriesTitle}
+        </Button>
+      </div>
+    </Card>
+  );
+}
 
 export function HomeScreen({ onNavigate }: NavigationProps) {
   useEffect(() => {
@@ -75,14 +137,9 @@ export function HomeScreen({ onNavigate }: NavigationProps) {
     <Screen focusKey={SCREEN_FOCUS_KEY} hero={hero}>
       <ContinueWatchingSection onNavigate={onNavigate} />
 
-      <section>
-        <h2 style={{ fontSize: "var(--fs-h2)", fontWeight: 700 }}>
-          {labels.emptyHome}
-        </h2>
-        <p style={{ margin: "0.35rem 0 1rem", color: "var(--sand-dim)" }}>
-          {labels.emptyHomeHint}
-        </p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
+      <Card title={labels.homeAddonsGroup}>
+        <p style={groupHintStyle}>{labels.homeAddonsHint}</p>
+        <div style={tileRowStyle}>
           <Button
             variant="primary"
             focusKey={SEARCH_FOCUS_KEY}
@@ -91,73 +148,29 @@ export function HomeScreen({ onNavigate }: NavigationProps) {
           >
             {labels.searchTitle}
           </Button>
-          <Button
-            variant="subtle"
-            focusKey={LIVE_FOCUS_KEY}
-            style={tileStyle}
-            onPress={() =>
-              onNavigate({
-                screen: "categories",
-                catalogType: "tv",
-                catalogId: "iptv:live",
-                title: labels.liveTv,
-              })
-            }
-          >
-            {labels.liveTv}
-          </Button>
-          <Button
-            variant="subtle"
-            focusKey={MOVIES_FOCUS_KEY}
-            style={tileStyle}
-            onPress={() =>
-              onNavigate({
-                screen: "categories",
-                catalogType: "movie",
-                catalogId: "iptv:movies",
-                title: labels.moviesTitle,
-              })
-            }
-          >
-            {labels.moviesTitle}
-          </Button>
-          <Button
-            variant="subtle"
-            focusKey={SERIES_FOCUS_KEY}
-            style={tileStyle}
-            onPress={() =>
-              onNavigate({
-                screen: "categories",
-                catalogType: "series",
-                catalogId: "iptv:series",
-                title: labels.seriesTitle,
-              })
-            }
-          >
-            {labels.seriesTitle}
-          </Button>
         </div>
-        <div
-          style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginTop: "0.75rem" }}
+      </Card>
+
+      {isIptvEnabled() && <LiveTvSection onNavigate={onNavigate} />}
+
+      <div style={tileRowStyle}>
+        <Button
+          variant="ghost"
+          focusKey={ADD_FOCUS_KEY}
+          style={tileStyle}
+          onPress={() => onNavigate({ screen: "addons" })}
         >
-          <Button
-            variant="ghost"
-            focusKey={ADD_FOCUS_KEY}
-            style={tileStyle}
-            onPress={() => onNavigate({ screen: "addons" })}
-          >
-            {labels.addPlaylist}
-          </Button>
-          <Button
-            variant="ghost"
-            focusKey={SETTINGS_FOCUS_KEY}
-            style={tileStyle}
-            onPress={() => onNavigate({ screen: "settings" })}
-          >
-            {labels.settings}
-          </Button>
-        </div>
-      </section>
+          {labels.addPlaylist}
+        </Button>
+        <Button
+          variant="ghost"
+          focusKey={SETTINGS_FOCUS_KEY}
+          style={tileStyle}
+          onPress={() => onNavigate({ screen: "settings" })}
+        >
+          {labels.settings}
+        </Button>
+      </div>
 
       <footer style={{ marginTop: "3rem" }}>
         <small style={{ color: "var(--sand-faint)", fontSize: "var(--fs-caption)" }}>

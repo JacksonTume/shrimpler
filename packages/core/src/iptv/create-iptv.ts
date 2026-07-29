@@ -107,6 +107,8 @@ export interface IptvService {
    * Background refresh: fetch each missing/stale source, update its snapshot, and
    * report whether any content changed (so the shell rebuilds only when needed).
    * Pass `{ force: true }` to ignore the staleness TTL (used right after an add).
+   * Gated off (CoreFeatures.iptv) this resolves `{ changed: false }` without
+   * touching the network — `force` included.
    */
   refresh(options?: RefreshIptvOptions): Promise<{ changed: boolean }>;
 }
@@ -291,11 +293,19 @@ export interface CreateIptvServiceDeps {
   now?: () => number;
   ttlMs?: number;
   onError?: AddonEngineErrorHandler;
+  /**
+   * Whether the subsystem is on (CoreFeatures.iptv); default true. False makes
+   * `refresh` a no-op. Config reads/writes stay live either way — they are pure
+   * storage, and keeping them working means a gated-off build doesn't silently
+   * lose the user's saved sources.
+   */
+  enabled?: boolean;
 }
 
 /** The core.iptv surface: manage persisted sources + trigger background refresh. */
 export function createIptvService(deps: CreateIptvServiceDeps): IptvService {
   const { storage, http, cache, now, ttlMs, onError } = deps;
+  const enabled = deps.enabled ?? true;
 
   return {
     listPlaylists: () => readPlaylists(storage),
@@ -348,6 +358,9 @@ export function createIptvService(deps: CreateIptvServiceDeps): IptvService {
     },
 
     refresh(options?: RefreshIptvOptions): Promise<{ changed: boolean }> {
+      if (!enabled) {
+        return Promise.resolve({ changed: false });
+      }
       return refreshIptvSources(
         { storage, http, cache, now, ttlMs, onError },
         options,

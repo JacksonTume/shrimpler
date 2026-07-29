@@ -161,4 +161,19 @@ describe("createEpgService", () => {
     await epg.refresh({ force: true });
     expect(await cache.listSourceKeys()).toEqual([]);
   });
+
+  it("fetches no guide when disabled, even forced", async () => {
+    const { http, streamCalls } = fakeHttp(XMLTV);
+    const epg = createEpgService({
+      http,
+      cache: createEpgCache({ storage: memoryStorage(), now: () => NOW }),
+      listSources: () => Promise.resolve([source()]),
+      now: () => NOW,
+      enabled: false,
+    });
+
+    expect(await epg.refresh({ force: true })).toEqual({ changed: false });
+    expect(streamCalls()).toBe(0);
+    expect(await epg.getNowNext(["iptv:live:chan1"], NOW)).toEqual({});
+  });
 });
