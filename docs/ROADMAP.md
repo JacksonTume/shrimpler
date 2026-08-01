@@ -6,7 +6,7 @@ honest — this file is the entry point for anyone (human or agent) picking up
 work. Architectural decisions live in [adr/](adr/README.md); do not re-litigate
 them here.
 
-_Last updated: 2026-07-29_
+_Last updated: 2026-08-01_
 
 ## Phase 0 — Foundations ✅ complete
 
@@ -97,14 +97,21 @@ Built iteratively, one shippable increment at a time. **TV is shelved** to
 Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
 **mobile** (Expo dev client, Android first). See the increment plan for details.
 
+> **Everything not paused here has landed (2026-08-01).** With mobile at VOD
+> parity, the only open Phase 2 items are the two ⏸ IPTV ones below, which stay
+> parked with the subsystem. Next up is either resuming IPTV (start with the live
+> stream-selection bug) or opening Phase 3.
+
 > **IPTV work is paused (2026-07-29), and the subsystem is gated off by
 > default.** It refreshes playlists/Xtream catalogs and fetches XMLTV guides on
 > every app start, which puts steady load on real subscription servers each time
 > a dev build starts or reloads — not worth paying while nobody is working on it.
 > The gate is `CoreFeatures.iptv` (a `createCore` dependency; the shell decides,
 > per ADR-0001), resolved in the web shell by `shell-web/src/features.ts` from
-> `VITE_IPTV_ENABLED`. Off means: no internal IPTV addon, `iptv.refresh` and
-> `epg.refresh` are no-ops (`force` included), and no Live TV surfaces in the UI.
+> `VITE_IPTV_ENABLED` and in the RN shell by `shell-rn/src/features.ts` (a
+> constant — Metro has no build-time env). Off means: no internal IPTV addon,
+> `iptv.refresh` and `epg.refresh` are no-ops (`force` included), and no Live TV
+> surfaces in the UI.
 > Saved playlists and Xtream accounts are left untouched, so setting
 > `VITE_IPTV_ENABLED=true` in a git-ignored `.env` restores the previous state.
 > The unfinished IPTV items below stay open — they are deferred, not dropped.
@@ -138,15 +145,26 @@ Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
       latency + copies (a production/native path avoids it — the RN shell has no
       CORS wall); and the muted-autoplay stream still needs an unmute control.
       Web-only concern
-- [ ] `packages/shell-rn` — Expo (dev client), Android-first. **Next up.**
-      Landed (committed): all three adapters — `StorageAdapter` (AsyncStorage),
-      `HttpAdapter` (fetch), `PlayerAdapter` (`react-native-video`, native HLS +
-      honors headers) — each tested; the `createRnCore` composition root; the
-      navigation route union; and `HomeScreen`. Remaining: the `search`, `detail`,
-      `player`, `settings`, and `addons` screens (reusing every `shared-ui` hook)
-      plus the `App.tsx` route stack, to reach **VOD** parity on mobile. The
-      `catalog`/`categories` screens are IPTV-only and come with the paused IPTV
-      work, not here — `createRnCore` passes `features: { iptv: false }`
+- [x] `packages/shell-rn` — Expo (dev client), Android-first: **VOD parity on
+      mobile**. Search → detail → pick a source → Real-Debrid resolve → play, with
+      continue-watching, all on the same `shared-ui` hooks the web shell uses (no
+      new view-model code). The `search`/`detail`/`player`/`settings`/`addons`
+      screens plus the `App.tsx` route stack now sit on top of the previously
+      landed adapters + `createRnCore`. Also in this increment: `RnVideoSurface`,
+      the `<Video>` binding that finally supplies `RnVideoPlayerAdapter`'s injected
+      handle (the adapter shipped against a placeholder factory); a `src/ui/` port
+      of the Reef foundation to RN `StyleSheet` (same primitives/vocabulary as
+      shell-web, flat coral instead of gradients and the platform UI font — no
+      extra native dep, no font assets); a PanResponder seek bar rather than a
+      slider package, so the dev client needs no rebuild; `src/back.ts` layering
+      the Android back button (an open stream picker consumes the press before the
+      route stack pops); and `src/features.ts` as the single IPTV gate, now read by
+      both `createRnCore` and the screens. Verified by lint/typecheck/depcruise +
+      the unit suite (pure helpers in `format.ts`); **not yet exercised on a device
+      or emulator** — the RN Vitest project is node-only by design, so the first
+      dev-client run is the outstanding confirmation. The `catalog`/`categories`
+      screens stay IPTV-only and come with the paused IPTV work, not here
+      (2026-08-01)
 - [x] EPG pipeline (streaming XMLTV parse, tvg-id matching), increment 1 —
       `HttpAdapter.getTextStream` streaming seam (gzip in the shell, DOM-less
       core), `core/src/epg` (incremental parser, tvg-id + fuzzy match,
@@ -170,8 +188,9 @@ Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
       motif recurs on continue-watching, EPG now-bars, and the player seek. Every
       screen restyled (home, search, detail, catalog/categories, settings, addons,
       playback) with all `data-*`/label test hooks preserved; bundled Space Grotesk
-      + Inter. Removed the dev-only content-id opener + focus-spike toggle. The RN
-      port should mirror this. **Ongoing — more polish to come** (2026-07-18)
+      + Inter. Removed the dev-only content-id opener + focus-spike toggle. Ported
+      to the RN shell's `src/ui/` alongside the shell-rn screens (2026-08-01).
+      **Ongoing — more polish to come** (2026-07-18)
 - [ ] ⏸ **IPTV live stream selection bug** (paused) — playing a live channel can
       play the wrong stream (e.g. selecting an "NZ" channel plays a different
       one). Points at a channel-id → stream mismatch on the internal-addon live

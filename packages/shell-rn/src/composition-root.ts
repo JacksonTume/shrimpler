@@ -5,9 +5,8 @@
 // persisted settings), swapping the browser adapters for RN ones.
 //
 // Unlike web, there is no build-time env fallback for keys (no import.meta):
-// keys are entered at runtime via the Settings screen (increment 4b) and read
-// back from storage here; absent → no provider, and the app runs on addon meta
-// alone.
+// keys are entered at runtime via the Settings screen and read back from storage
+// here; absent → no provider, and the app runs on addon meta alone.
 
 import { createCore, RealDebridProvider, TmdbProvider } from "@shrimpler/core";
 import type {
@@ -24,6 +23,7 @@ import {
 import { RnHttpAdapter } from "./adapters/rn-http";
 import { RnStorageAdapter } from "./adapters/rn-storage";
 import { RnVideoPlayerAdapter } from "./adapters/rn-video-player";
+import { isIptvEnabled } from "./features";
 
 // `__DEV__` is a react-native global (defined by Metro), undefined under Node/
 // Vitest — guard with typeof so this module is safe to import in tests.
@@ -58,12 +58,11 @@ export async function createRnCore(): Promise<Core> {
   return createCore({
     storage,
     http,
-    // IPTV work is paused and the subsystem is gated off project-wide, so a dev
+    // One source of truth with the screens (features.ts): the shell decides the
+    // gate, core receives it (ADR-0001). Off while IPTV work is paused, so a dev
     // client doesn't refresh playlists/EPG against real subscription servers on
-    // every launch. Web has an env opt-in (VITE_IPTV_ENABLED); RN has no
-    // build-time env, so flip this constant when the work resumes and the
-    // screens land.
-    features: { iptv: false },
+    // every launch.
+    features: { iptv: isIptvEnabled() },
     playerFactory: () => new RnVideoPlayerAdapter(),
     providers: await metadataProviders(http, storage),
     debrid: await debridProvider(http, storage),

@@ -1,96 +1,49 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // RN Home screen. Empty-by-default per §9.1 (the user supplies every source),
-// mirroring the web HomeScreen but rendered with React Native primitives. Reuses
-// the shared-ui useContinueWatching hook + labels verbatim — no logic lives here.
+// mirroring the web HomeScreen: a wordmark hero, the continue-watching rail when
+// there is progress, and the primary navigation as tiles. Reuses the shared-ui
+// useContinueWatching hook + labels verbatim — no logic lives here.
+//
+// The Live TV / Movies / Series tiles are gated on features.ts and therefore
+// hidden: their catalog screens ship with the paused IPTV work, and a gated-off
+// core builds no IPTV addon for them to browse.
 
-import { FlatList, Pressable, ScrollView, Text, View } from "react-native";
+import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
 import { labels, useContinueWatching } from "@shrimpler/shared-ui";
-import type { ProgressEntry } from "@shrimpler/core";
+import {
+  Button,
+  Card,
+  PosterCard,
+  Screen,
+  color,
+  fontSize,
+  space,
+} from "../ui";
+import { episodeTag, progressFraction } from "../format";
+import { isIptvEnabled } from "../features";
 import type { NavigationProps } from "../navigation";
 
-function progressPercent(entry: ProgressEntry): number {
-  if (entry.durationSec <= 0) {
-    return 0;
-  }
-  return Math.min(
-    100,
-    Math.round((entry.positionSec / entry.durationSec) * 100),
-  );
-}
-
-function HomeButton({
-  label,
-  onPress,
-}: {
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={{
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        marginVertical: 4,
-        borderWidth: 1,
-        borderColor: "#888",
-        borderRadius: 8,
-      }}
-    >
-      <Text style={{ fontSize: 16 }}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function ContinueWatchingCard({
-  entry,
-  onOpen,
-}: {
-  entry: ProgressEntry;
-  onOpen: (entry: ProgressEntry) => void;
-}) {
-  const episodeTag =
-    entry.season !== undefined && entry.episode !== undefined
-      ? ` · S${entry.season}E${entry.episode}`
-      : "";
-  return (
-    <Pressable onPress={() => onOpen(entry)} style={{ width: 160, marginRight: 12 }}>
-      <Text numberOfLines={1}>
-        {entry.name ?? entry.id}
-        {episodeTag}
-      </Text>
-      <View style={{ height: 3, marginTop: 4, backgroundColor: "#555" }}>
-        <View
-          style={{
-            height: "100%",
-            width: `${progressPercent(entry)}%`,
-            backgroundColor: "#fff",
-          }}
-        />
-      </View>
-    </Pressable>
-  );
-}
-
-function ContinueWatchingSection({ onNavigate }: NavigationProps) {
+function ContinueWatchingRail({ onNavigate }: NavigationProps) {
   const { entries, isLoading } = useContinueWatching();
   if (isLoading || entries.length === 0) {
     return null;
   }
   return (
-    <View style={{ marginBottom: 16 }}>
-      <Text style={{ fontSize: 18, fontWeight: "600", marginBottom: 8 }}>
-        {labels.continueWatching}
-      </Text>
+    <View style={styles.rail}>
+      <Text style={styles.railTitle}>{labels.continueWatching}</Text>
       <FlatList
         horizontal
+        showsHorizontalScrollIndicator={false}
         data={[...entries]}
         keyExtractor={(entry) => entry.id}
+        contentContainerStyle={styles.railItems}
         renderItem={({ item }) => (
-          <ContinueWatchingCard
-            entry={item}
-            onOpen={(e) =>
-              onNavigate({ screen: "detail", id: e.id, type: e.type })
+          <PosterCard
+            title={`${item.name ?? item.id}${episodeTag(item)}`}
+            poster={item.poster}
+            progress={progressFraction(item)}
+            onPress={() =>
+              onNavigate({ screen: "detail", id: item.id, type: item.type })
             }
           />
         )}
@@ -99,66 +52,145 @@ function ContinueWatchingSection({ onNavigate }: NavigationProps) {
   );
 }
 
-export function HomeScreen({ onNavigate }: NavigationProps) {
+/** IPTV browse tiles. Rendered only while the subsystem is on (features.ts). */
+function LiveTvSection({ onNavigate }: NavigationProps) {
   return (
-    <ScrollView contentContainerStyle={{ padding: 16 }}>
-      <Text style={{ fontSize: 28, fontWeight: "700" }}>{labels.appName}</Text>
-      <Text style={{ marginBottom: 16 }}>{labels.tagline}</Text>
-
-      <ContinueWatchingSection onNavigate={onNavigate} />
-
-      <Text style={{ fontSize: 18, fontWeight: "600" }}>{labels.emptyHome}</Text>
-      <Text style={{ marginBottom: 12 }}>{labels.emptyHomeHint}</Text>
-
-      <HomeButton
-        label={labels.searchTitle}
-        onPress={() => onNavigate({ screen: "search" })}
-      />
-      <HomeButton
-        label={labels.liveTv}
-        onPress={() =>
-          onNavigate({
-            screen: "catalog",
-            catalogType: "tv",
-            catalogId: "iptv:live",
-            title: labels.liveTv,
-          })
-        }
-      />
-      <HomeButton
-        label={labels.moviesTitle}
-        onPress={() =>
-          onNavigate({
-            screen: "catalog",
-            catalogType: "movie",
-            catalogId: "iptv:movies",
-            title: labels.moviesTitle,
-          })
-        }
-      />
-      <HomeButton
-        label={labels.seriesTitle}
-        onPress={() =>
-          onNavigate({
-            screen: "catalog",
-            catalogType: "series",
-            catalogId: "iptv:series",
-            title: labels.seriesTitle,
-          })
-        }
-      />
-      <HomeButton
-        label={labels.addPlaylist}
-        onPress={() => onNavigate({ screen: "addons" })}
-      />
-      <HomeButton
-        label={labels.settings}
-        onPress={() => onNavigate({ screen: "settings" })}
-      />
-
-      <Text style={{ marginTop: 24, fontSize: 12, color: "#888" }}>
-        {labels.disclaimer}
-      </Text>
-    </ScrollView>
+    <Card title={labels.homeLiveGroup}>
+      <Text style={styles.groupHint}>{labels.homeLiveHint}</Text>
+      <View style={styles.tiles}>
+        <Button
+          variant="subtle"
+          style={styles.tile}
+          onPress={() =>
+            onNavigate({
+              screen: "catalog",
+              catalogType: "tv",
+              catalogId: "iptv:live",
+              title: labels.liveTv,
+            })
+          }
+        >
+          {labels.liveTv}
+        </Button>
+        <Button
+          variant="subtle"
+          style={styles.tile}
+          onPress={() =>
+            onNavigate({
+              screen: "catalog",
+              catalogType: "movie",
+              catalogId: "iptv:movies",
+              title: labels.moviesTitle,
+            })
+          }
+        >
+          {labels.moviesTitle}
+        </Button>
+        <Button
+          variant="subtle"
+          style={styles.tile}
+          onPress={() =>
+            onNavigate({
+              screen: "catalog",
+              catalogType: "series",
+              catalogId: "iptv:series",
+              title: labels.seriesTitle,
+            })
+          }
+        >
+          {labels.seriesTitle}
+        </Button>
+      </View>
+    </Card>
   );
 }
+
+export function HomeScreen({ onNavigate }: NavigationProps) {
+  const hero = (
+    <View style={styles.hero}>
+      <Text style={styles.wordmark}>{labels.appName}</Text>
+      <Text style={styles.tagline}>{labels.tagline}</Text>
+    </View>
+  );
+
+  return (
+    <Screen hero={hero}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <ContinueWatchingRail onNavigate={onNavigate} />
+
+        <Card title={labels.homeAddonsGroup}>
+          <Text style={styles.groupHint}>{labels.homeAddonsHint}</Text>
+          <Button
+            testID="home-search"
+            fullWidth
+            onPress={() => onNavigate({ screen: "search" })}
+          >
+            {labels.searchTitle}
+          </Button>
+        </Card>
+
+        {isIptvEnabled() && <LiveTvSection onNavigate={onNavigate} />}
+
+        <View style={styles.tiles}>
+          <Button
+            variant="ghost"
+            style={styles.tile}
+            onPress={() => onNavigate({ screen: "addons" })}
+          >
+            {labels.addPlaylist}
+          </Button>
+          <Button
+            variant="ghost"
+            style={styles.tile}
+            onPress={() => onNavigate({ screen: "settings" })}
+          >
+            {labels.settings}
+          </Button>
+        </View>
+
+        <Text style={styles.disclaimer}>{labels.disclaimer}</Text>
+      </ScrollView>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  hero: {
+    paddingHorizontal: space.lg,
+    paddingTop: space.xl,
+    paddingBottom: space.xxl,
+  },
+  wordmark: {
+    fontSize: fontSize.display,
+    fontWeight: "700",
+    color: color.sand,
+    letterSpacing: -0.5,
+  },
+  tagline: {
+    marginTop: space.sm,
+    color: color.sandDim,
+    fontSize: fontSize.body,
+  },
+  content: { paddingBottom: space.xxl },
+  rail: { marginBottom: space.lg },
+  railTitle: {
+    fontSize: fontSize.h2,
+    fontWeight: "700",
+    color: color.sand,
+    marginBottom: space.md,
+  },
+  railItems: { gap: space.md },
+  groupHint: {
+    marginTop: -space.xs,
+    marginBottom: space.lg,
+    color: color.sandDim,
+    fontSize: fontSize.small,
+  },
+  tiles: { flexDirection: "row", flexWrap: "wrap", gap: space.md },
+  tile: { flexGrow: 1, flexBasis: 140 },
+  disclaimer: {
+    marginTop: space.xxl,
+    color: color.sandFaint,
+    fontSize: fontSize.caption,
+  },
+});
