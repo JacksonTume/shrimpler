@@ -9,3 +9,9 @@ coverage/
 .env.*
 !.env.example
 .DS_Store
+
+# Expo prebuild output (packages/shell-rn): the native projects are generated
+# from app.json + the config plugins, so they are build artifacts, not source.
+android/
+ios/
+.expo/
