@@ -6,6 +6,8 @@
 // rehydration, and source persistence round-trips. Plain Node, no real I/O (§2.2).
 
 import { describe, expect, it, vi } from "vitest";
+import type { Mock } from "vitest";
+import type { AddonEngineErrorHandler } from "../addon/create-engine";
 import type { HttpAdapter, HttpResponse } from "../adapters/http";
 import type { StorageAdapter } from "../adapters/storage";
 import {
@@ -66,7 +68,7 @@ async function refreshThenBuild(
   storage: StorageAdapter,
   http: HttpAdapter,
   cache: IptvContentCache,
-  onError?: ReturnType<typeof vi.fn>,
+  onError?: Mock<AddonEngineErrorHandler>,
 ) {
   const result = await refreshIptvSources({ storage, http, cache, onError });
   const addon = await buildIptvAddon({ storage, http, cache });
