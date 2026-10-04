@@ -108,7 +108,9 @@ export function SearchScreen({ onNavigate }: NavigationProps) {
       {showEmpty && <Callout tone="muted">{labels.searchEmpty}</Callout>}
 
       {results.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
           {results.map((item) => (
             <ListRow
               key={item.id}

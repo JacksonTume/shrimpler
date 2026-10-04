@@ -57,7 +57,7 @@ export function Dialog({ title, onClose, children }: DialogProps) {
 
 const styles = StyleSheet.create({
   scrim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: color.scrim,
     justifyContent: "flex-end",
   },

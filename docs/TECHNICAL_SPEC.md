@@ -29,6 +29,12 @@ shells**:
   Android mobile, iOS mobile.
 - **Web shell** (React DOM) → Samsung Tizen, LG webOS, browser / PWA.
 
+> **Partly superseded (phasing):** the RN shell was built **mobile-first** in Phase 2
+> as `packages/shell-rn` — Expo dev client, Android first, plain `react-native` rather
+> than `react-native-tvos`. TV targets (react-native-tvos, D-pad focus, Tizen/webOS)
+> moved to Phase 3. The two-shell architecture is unchanged. Current phasing lives in
+> [ROADMAP.md](ROADMAP.md).
+
 ### 1.2 Design goals
 
 1. **Single source of truth for logic.** ~80% of behaviour (addon protocol, catalog
@@ -128,7 +134,7 @@ Monorepo (pnpm or npm workspaces), npm scope **`@shrimpler`**. Suggested structu
     /viewmodels          # hooks/view-models that call core, return state+handlers
     /labels              # neutral user-facing string map (see §9.2)
 
-  /shell-rn              # @shrimpler/shell-rn — react-native-tvos app
+  /shell-rn              # @shrimpler/shell-rn — RN app (built as Expo mobile first; TV later, see §1.1 note)
     /players             # ExoPlayer / AVPlayer adapter impls
     /focus               # D-pad focus model
     /screens
@@ -700,6 +706,9 @@ official-store presence is upside pursued via disciplined neutral framing.
 - **Target: a build you actually use.**
 
 ### Phase 2 — Second shell + IPTV
+
+> **Superseded in part:** the second shell shipped as an Expo **mobile** shell; tvOS and
+> other TV work moved to Phase 3. See [ROADMAP.md](ROADMAP.md) for actual status.
 
 - Bring up the other shell (share core + view-models).
 - IPTV internal addon: M3U + Xtream ingest, EPG pipeline + guide UI.

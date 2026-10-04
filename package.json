@@ -5,7 +5,7 @@
   "license": "AGPL-3.0-or-later",
   "packageManager": "pnpm@10.12.3",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.13"
   },
   "scripts": {
     "lint": "eslint .",
@@ -21,14 +21,20 @@
   },
   "devDependencies": {
     "@shrimpler/core": "workspace:*",
-    "@types/node": "^22.20.1",
-    "dependency-cruiser": "^16.0.0",
-    "eslint": "^9.0.0",
-    "jsdom": "^29.1.1",
-    "prettier": "^3.0.0",
-    "tsx": "^4.23.0",
-    "typescript": "^5.8.0",
-    "typescript-eslint": "^8.0.0",
-    "vitest": "^3.2.0"
+    "@types/node": "^22.20.5",
+    "dependency-cruiser": "^18.5.0",
+    "eslint": "^10.12.0",
+    "jsdom": "^30.1.2",
+    "prettier": "^3.9.9",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^5.0.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "19.2.3",
+      "react-dom": "19.2.3"
+    }
   }
 }

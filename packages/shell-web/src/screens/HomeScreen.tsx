@@ -57,7 +57,11 @@ function ContinueWatchingSection({ onNavigate }: NavigationProps) {
 }
 
 const tileStyle = { flex: "1 1 160px" } as const;
-const tileRowStyle = { display: "flex", flexWrap: "wrap", gap: "0.75rem" } as const;
+const tileRowStyle = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "0.75rem",
+} as const;
 const groupHintStyle = {
   margin: "-0.35rem 0 1rem",
   color: "var(--sand-dim)",
@@ -173,7 +177,9 @@ export function HomeScreen({ onNavigate }: NavigationProps) {
       </div>
 
       <footer style={{ marginTop: "3rem" }}>
-        <small style={{ color: "var(--sand-faint)", fontSize: "var(--fs-caption)" }}>
+        <small
+          style={{ color: "var(--sand-faint)", fontSize: "var(--fs-caption)" }}
+        >
           {labels.disclaimer}
         </small>
       </footer>

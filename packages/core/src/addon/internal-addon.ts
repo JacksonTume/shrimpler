@@ -22,10 +22,7 @@ export interface InternalAddon {
     extra?: CatalogExtra,
   ): Promise<MetaPreview[]>;
   /** The catalog's categories (with counts) for drill-down browsing. */
-  getCatalogGenres(
-    type: MediaType,
-    catalogId: string,
-  ): Promise<CatalogGenre[]>;
+  getCatalogGenres(type: MediaType, catalogId: string): Promise<CatalogGenre[]>;
   getMeta(id: ContentId, type: MediaType): Promise<MetaDetail | null>;
   getStreams(id: ContentId, type: MediaType): Promise<PlayableSource[]>;
   getSubtitles(id: ContentId, type: MediaType): Promise<SubtitleTrack[]>;

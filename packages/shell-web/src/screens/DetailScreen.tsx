@@ -57,11 +57,24 @@ function EpisodesSection({
 
   return (
     <section style={{ marginTop: "2rem" }}>
-      <h2 style={{ fontSize: "var(--fs-h2)", fontWeight: 700, marginBottom: "0.75rem" }}>
+      <h2
+        style={{
+          fontSize: "var(--fs-h2)",
+          fontWeight: 700,
+          marginBottom: "0.75rem",
+        }}
+      >
         {labels.episodesTitle}
       </h2>
       {seasons.length > 1 && (
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.85rem" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "0.5rem",
+            flexWrap: "wrap",
+            marginBottom: "0.85rem",
+          }}
+        >
           {seasons.map((season) => (
             <Button
               key={season}
@@ -96,7 +109,10 @@ function EpisodesSection({
 }
 
 export function DetailScreen({ onNavigate, id, type }: DetailScreenProps) {
-  const { detail, episodes, isLoading, error, hasProvider } = useDetail(id, type);
+  const { detail, episodes, isLoading, error, hasProvider } = useDetail(
+    id,
+    type,
+  );
 
   const [picker, setPicker] = useState<{
     id: ContentId;
@@ -207,7 +223,12 @@ function DetailBody({
           <img
             src={detail.background}
             alt=""
-            style={{ width: "100%", maxHeight: 360, objectFit: "cover", display: "block" }}
+            style={{
+              width: "100%",
+              maxHeight: 360,
+              objectFit: "cover",
+              display: "block",
+            }}
           />
           <span
             aria-hidden
@@ -234,7 +255,14 @@ function DetailBody({
             }}
           />
         )}
-        <div style={{ flex: "1 1 280px", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+        <div
+          style={{
+            flex: "1 1 280px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.85rem",
+          }}
+        >
           {metaLine.length > 0 && (
             <p style={{ color: "var(--sand-dim)" }}>{metaLine.join("  ·  ")}</p>
           )}
@@ -246,13 +274,17 @@ function DetailBody({
             </div>
           )}
           {detail.genres !== undefined && detail.genres.length > 0 && (
-            <p style={{ color: "var(--sand-dim)", fontSize: "var(--fs-small)" }}>
+            <p
+              style={{ color: "var(--sand-dim)", fontSize: "var(--fs-small)" }}
+            >
               {labels.genresTitle}: {detail.genres.join(", ")}
             </p>
           )}
           {detail.description !== undefined && <p>{detail.description}</p>}
           {detail.cast !== undefined && detail.cast.length > 0 && (
-            <p style={{ color: "var(--sand-dim)", fontSize: "var(--fs-small)" }}>
+            <p
+              style={{ color: "var(--sand-dim)", fontSize: "var(--fs-small)" }}
+            >
               {labels.castTitle}: {detail.cast.join(", ")}
             </p>
           )}

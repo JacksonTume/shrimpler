@@ -44,8 +44,10 @@ const sizeStyle: Record<Size, CSSProperties> = {
   sm: { padding: "0.35rem 0.8rem", fontSize: "var(--fs-small)" },
 };
 
-interface ButtonProps
-  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick" | "style"> {
+interface ButtonProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "onClick" | "style"
+> {
   children: ReactNode;
   variant?: Variant;
   size?: Size;

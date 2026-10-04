@@ -8,12 +8,22 @@ import { createElement } from "react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CATALOG_PAGE_SIZE } from "@shrimpler/core";
-import type { CatalogExtra, Core, MediaType, MetaPreview } from "@shrimpler/core";
+import type {
+  CatalogExtra,
+  Core,
+  MediaType,
+  MetaPreview,
+} from "@shrimpler/core";
 import { CoreProvider } from "../context/core-context";
 import { useCatalogPage } from "./use-catalog-page";
 
 function preview(i: number): MetaPreview {
-  return { id: `iptv:live:c${i}`, type: "tv", name: `C${i}`, posterShape: "square" };
+  return {
+    id: `iptv:live:c${i}`,
+    type: "tv",
+    name: `C${i}`,
+    posterShape: "square",
+  };
 }
 
 /** A fake engine whose getCatalog slices a source array by extra.skip. */
@@ -71,13 +81,19 @@ describe("useCatalogPage", () => {
       { wrapper: wrapper(core), initialProps: { genre: "News" } },
     );
 
-    await waitFor(() => expect(result.current.items).toHaveLength(CATALOG_PAGE_SIZE));
+    await waitFor(() =>
+      expect(result.current.items).toHaveLength(CATALOG_PAGE_SIZE),
+    );
     act(() => result.current.loadMore());
-    await waitFor(() => expect(result.current.items).toHaveLength(CATALOG_PAGE_SIZE + 10));
+    await waitFor(() =>
+      expect(result.current.items).toHaveLength(CATALOG_PAGE_SIZE + 10),
+    );
 
     rerender({ genre: "Sports" });
     // Back to a single page for the new genre — accumulation was reset.
-    await waitFor(() => expect(result.current.items).toHaveLength(CATALOG_PAGE_SIZE));
+    await waitFor(() =>
+      expect(result.current.items).toHaveLength(CATALOG_PAGE_SIZE),
+    );
   });
 
   it("does not refetch on a re-render with an unchanged query", async () => {

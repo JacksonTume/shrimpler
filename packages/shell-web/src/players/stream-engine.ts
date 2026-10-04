@@ -34,4 +34,6 @@ export interface StreamEngineOptions {
   isLive?: boolean;
 }
 
-export type StreamEngineFactory = (options: StreamEngineOptions) => StreamEngine;
+export type StreamEngineFactory = (
+  options: StreamEngineOptions,
+) => StreamEngine;

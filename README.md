@@ -14,7 +14,8 @@ Shrimpler is a media player built from a single pure-TypeScript core consumed
 by per-platform shells:
 
 - **Web shell** (React DOM) → browser / PWA now; Samsung Tizen and LG webOS later.
-- **RN-TV shell** (react-native-tvos) → Android TV, Fire TV, tvOS, mobile — planned (Phase 2).
+- **RN shell** (React Native via Expo) → Android mobile now (iOS later); Android TV,
+  Fire TV, and tvOS later.
 
 It plays what your sources return. It bundles no addons, includes no source
 directory, and makes no representation about the provenance of user-supplied
@@ -28,6 +29,7 @@ architecture.
 | `packages/core`      | `@shrimpler/core`      | Pure-TS shared brain: addon engine, metadata resolution, debrid, IPTV, library, ranking. Zero platform dependencies. |
 | `packages/shared-ui` | `@shrimpler/shared-ui` | React logic shared by shells: view-models and the neutral labels module.                                             |
 | `packages/shell-web` | `@shrimpler/shell-web` | React DOM shell (Vite): browser/PWA, later Tizen/webOS.                                                              |
+| `packages/shell-rn`  | `@shrimpler/shell-rn`  | React Native shell (Expo dev client): Android mobile first, TV later.                                                |
 | `docs/`              | —                      | Technical spec and architecture decision records (ADRs).                                                             |
 
 The one load-bearing rule: **core never imports from a shell, the DOM, React,
@@ -37,7 +39,7 @@ DOM-less TypeScript config.
 
 ## Development
 
-Requires Node ≥ 22 and [pnpm](https://pnpm.io).
+Requires Node ≥ 22.13 and [pnpm](https://pnpm.io).
 
 ```sh
 pnpm install
@@ -64,9 +66,17 @@ on the Settings screen, or in dev via a git-ignored `.env` (see
 optional — without them the app still runs on addon-supplied metadata and
 direct-URL streams.
 
-In the dev server, the **"Show focus spike"** button (top-right, dev builds
-only) opens the spatial-navigation test screen — drive it with arrow keys,
-Enter, and Escape/Backspace (see ADR-0010).
+IPTV + EPG is **off by default** while that work is paused (see the roadmap).
+Opt in on web with `VITE_IPTV_ENABLED=true` in the same `.env`; the RN shell's
+gate is a constant in `packages/shell-rn/src/features.ts`.
+
+The **RN shell** runs in an Expo dev client (a custom native build, not Expo
+Go). Android first:
+
+```sh
+pnpm --filter @shrimpler/shell-rn android   # build + install the dev client
+pnpm --filter @shrimpler/shell-rn start     # Metro for an installed dev client
+```
 
 Current status and what to work on next: [docs/ROADMAP.md](docs/ROADMAP.md).
 
@@ -76,6 +86,8 @@ Current status and what to work on next: [docs/ROADMAP.md](docs/ROADMAP.md).
 pnpm test                                # all suites
 npx vitest run --project core            # core package only (plain Node)
 npx vitest run --project shell-web       # web shell only (jsdom)
+npx vitest run --project shared-ui       # view-models (jsdom)
+npx vitest run --project shell-rn        # RN adapters/helpers (node)
 npx vitest run packages/core/src/addon/create-engine.test.ts   # one file
 ```
 
@@ -87,9 +99,12 @@ Everything runs offline — no suite touches the network:
   fan-out, per-addon timeouts, partial-failure isolation, merge/dedup, and
   stream ranking.
 - **shell-web** tests run in jsdom: per-screen render tests (home, addon
-  manager, search, detail, settings), the `<video>` player adapter, and the
-  focus spike / back-key stack. View-models are unit-tested against a fake core
-  in the shared-ui suite.
+  manager, search, detail, settings, catalog), the `<video>` player adapter,
+  and the back-key stack. View-models are unit-tested against a fake core in
+  the shared-ui suite.
+- **shell-rn** tests run in plain Node and cover adapters, the composition root,
+  and pure helpers only. RN component rendering needs a device or emulator and
+  is not covered by CI.
 
 Manual testing: the dev server runs the full Phase 1 flow — add a source by URL,
 search a title, open its detail, pick a source, and play (Real-Debrid resolves

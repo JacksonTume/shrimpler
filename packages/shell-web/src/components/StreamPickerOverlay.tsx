@@ -68,7 +68,9 @@ export function StreamPickerOverlay({
       ) : streams.length === 0 ? (
         <Callout tone="muted">{labels.streamsEmpty}</Callout>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
           {streams.map((source) => (
             <ListRow
               key={source.id}

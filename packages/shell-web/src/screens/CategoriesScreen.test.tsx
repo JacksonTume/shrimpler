@@ -75,7 +75,9 @@ describe("CategoriesScreen", () => {
         { name: "", count: 3 },
       ]),
     );
-    await waitFor(() => expect(screen.getByText(labels.categoryAll)).toBeDefined());
+    await waitFor(() =>
+      expect(screen.getByText(labels.categoryAll)).toBeDefined(),
+    );
     expect(screen.getByText("News")).toBeDefined();
     expect(screen.getByText(labels.categoryUncategorized)).toBeDefined();
     // "All" count is the sum (2 + 3 = 5).

@@ -6,7 +6,11 @@
 import type { ContentId, MediaType } from "../types/ids";
 import type { MetaPreview, MetaDetail } from "../types/meta";
 import type { PlayableSource, SubtitleTrack } from "../types/sources";
-import type { InstalledAddon, CatalogExtra, CatalogGenre } from "../types/addon";
+import type {
+  InstalledAddon,
+  CatalogExtra,
+  CatalogGenre,
+} from "../types/addon";
 
 export interface AddonEngine {
   install(manifestUrl: string): Promise<InstalledAddon>;
@@ -19,10 +23,7 @@ export interface AddonEngine {
     catalogId: string,
     extra?: CatalogExtra,
   ): Promise<MetaPreview[]>;
-  getCatalogGenres(
-    type: MediaType,
-    catalogId: string,
-  ): Promise<CatalogGenre[]>;
+  getCatalogGenres(type: MediaType, catalogId: string): Promise<CatalogGenre[]>;
   getMeta(id: ContentId, type: MediaType): Promise<MetaDetail | null>;
   getStreams(id: ContentId, type: MediaType): Promise<PlayableSource[]>;
   getSubtitles(id: ContentId, type: MediaType): Promise<SubtitleTrack[]>;

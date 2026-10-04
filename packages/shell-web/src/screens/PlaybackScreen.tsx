@@ -286,9 +286,7 @@ export function PlaybackScreen({
               {error}
             </Callout>
           ) : (
-            <div
-              style={{ display: "flex", gap: "1rem", alignItems: "center" }}
-            >
+            <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
               <button
                 ref={playPause.ref}
                 type="button"

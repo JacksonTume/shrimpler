@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock the native module so the real (native-bridge) code never loads under
 // Node — an in-memory Map stands in for AsyncStorage.
-const { fakeStore } = vi.hoisted(() => ({ fakeStore: new Map<string, string>() }));
+const { fakeStore } = vi.hoisted(() => ({
+  fakeStore: new Map<string, string>(),
+}));
 vi.mock("@react-native-async-storage/async-storage", () => ({
   default: {
     getItem: (key: string): Promise<string | null> =>

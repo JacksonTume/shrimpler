@@ -59,7 +59,12 @@ function NowNextStrip({ nowNext }: { nowNext: NowNext }) {
           <span style={line} title={now.title}>
             {labels.epgNow}: {now.title}
           </span>
-          <TideBar value={progress} height={2} crest={false} style={{ margin: "3px 0" }} />
+          <TideBar
+            value={progress}
+            height={2}
+            crest={false}
+            style={{ margin: "3px 0" }}
+          />
         </>
       )}
       {next !== undefined && (
@@ -154,10 +159,18 @@ export function CatalogScreen({
                 data-item={item.id}
                 title={item.name}
                 poster={item.poster}
-                posterShape={item.posterShape === "square" ? "square" : "poster"}
-                badge={item.type === "tv" ? <Badge tone="live">{labels.live}</Badge> : undefined}
+                posterShape={
+                  item.posterShape === "square" ? "square" : "poster"
+                }
+                badge={
+                  item.type === "tv" ? (
+                    <Badge tone="live">{labels.live}</Badge>
+                  ) : undefined
+                }
                 footer={
-                  nowNext !== undefined ? <NowNextStrip nowNext={nowNext} /> : undefined
+                  nowNext !== undefined ? (
+                    <NowNextStrip nowNext={nowNext} />
+                  ) : undefined
                 }
                 onPress={() =>
                   onNavigate({ screen: "detail", id: item.id, type: item.type })

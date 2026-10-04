@@ -10,15 +10,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^2.1.0",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@shrimpler/core": "workspace:*",
     "@shrimpler/shared-ui": "workspace:*",
-    "expo": "^53.0.0",
-    "react": "^19.0.0",
-    "react-native": "^0.79.0",
-    "react-native-video": "^6.10.0"
+    "expo": "~57.0.26",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-video": "^6.19.3"
   },
   "devDependencies": {
-    "@types/react": "^19.0.0"
+    "@types/react": "~19.2.18"
   }
 }

@@ -6,10 +6,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { StorageAdapter } from "../adapters/storage";
 import type { IptvContent } from "./content";
-import {
-  IPTV_SNAPSHOT_VERSION,
-  createIptvContentCache,
-} from "./iptv-cache";
+import { IPTV_SNAPSHOT_VERSION, createIptvContentCache } from "./iptv-cache";
 
 function memoryStorage(seed: Record<string, unknown> = {}): StorageAdapter {
   const store = new Map<string, unknown>(Object.entries(seed));
@@ -36,7 +33,10 @@ const content = (name: string): IptvContent => ({
 
 describe("createIptvContentCache", () => {
   it("round-trips a snapshot (meta + body)", async () => {
-    const cache = createIptvContentCache({ storage: memoryStorage(), now: () => 42 });
+    const cache = createIptvContentCache({
+      storage: memoryStorage(),
+      now: () => 42,
+    });
     expect(await cache.write("m3u:a", content("a"), "sig1", true)).toBe(true);
 
     expect(await cache.readMeta("m3u:a")).toEqual({
@@ -91,7 +91,9 @@ describe("createIptvContentCache", () => {
       },
       onError,
     });
-    expect(await failing.write("m3u:a", content("b"), "sig2", true)).toBe(false);
+    expect(await failing.write("m3u:a", content("b"), "sig2", true)).toBe(
+      false,
+    );
     expect(onError).toHaveBeenCalledTimes(1);
     // Prior snapshot untouched.
     expect(await cache.readContent("m3u:a")).toEqual(content("a"));

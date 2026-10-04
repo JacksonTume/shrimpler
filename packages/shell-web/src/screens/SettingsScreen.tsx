@@ -74,7 +74,13 @@ function SettingKey({
           onChangeText={onChangeText}
           disabled={isSaving}
         />
-        <p style={{ margin: "0.5rem 0 1rem", color: "var(--sand-faint)", fontSize: "var(--fs-small)" }}>
+        <p
+          style={{
+            margin: "0.5rem 0 1rem",
+            color: "var(--sand-faint)",
+            fontSize: "var(--fs-small)",
+          }}
+        >
           {hint}
         </p>
         <div style={{ display: "flex", gap: "0.6rem" }}>
@@ -117,7 +123,10 @@ function StatusDot({ on }: { on: boolean }): ReactNode {
   );
 }
 
-export function SettingsScreen({ onNavigate, reloadCore }: SettingsScreenProps) {
+export function SettingsScreen({
+  onNavigate,
+  reloadCore,
+}: SettingsScreenProps) {
   const tmdb = useTmdbSettings(reloadCore);
   const debrid = useDebridSettings(reloadCore);
 

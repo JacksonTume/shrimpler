@@ -126,7 +126,10 @@ function IptvRefreshIndicator({
         {detail}
       </div>
       {total > 0 && (
-        <TideBar value={total > 0 ? completed / total : 0} style={{ marginTop: "0.5rem" }} />
+        <TideBar
+          value={total > 0 ? completed / total : 0}
+          style={{ marginTop: "0.5rem" }}
+        />
       )}
     </div>
   );

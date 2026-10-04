@@ -268,8 +268,7 @@ export async function refreshIptvSources(
         changed = true;
       }
     } catch (error) {
-      const manifestUrl =
-        job.kind === "m3u" ? job.url : job.account.host;
+      const manifestUrl = job.kind === "m3u" ? job.url : job.account.host;
       onError?.({ manifestUrl, resource: "manifest", error });
     }
     completed += 1;

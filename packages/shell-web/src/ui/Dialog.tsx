@@ -72,10 +72,17 @@ export function Dialog({
               marginBottom: "1rem",
             }}
           >
-            <Button variant="ghost" size="sm" focusKey={closeFocusKey} onPress={onClose}>
+            <Button
+              variant="ghost"
+              size="sm"
+              focusKey={closeFocusKey}
+              onPress={onClose}
+            >
               {`‹ ${labels.back}`}
             </Button>
-            <h2 style={{ fontSize: "var(--fs-h2)", fontWeight: 700 }}>{title}</h2>
+            <h2 style={{ fontSize: "var(--fs-h2)", fontWeight: 700 }}>
+              {title}
+            </h2>
           </header>
           {children}
         </div>

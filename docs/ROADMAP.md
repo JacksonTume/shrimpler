@@ -6,7 +6,17 @@ honest — this file is the entry point for anyone (human or agent) picking up
 work. Architectural decisions live in [adr/](adr/README.md); do not re-litigate
 them here.
 
-_Last updated: 2026-08-01_
+_Last updated: 2026-10-04_
+
+## Next up
+
+1. **First real run of `shell-rn`** on an Android device or emulator (Expo dev
+   client). Mobile VOD parity has only been verified by lint/typecheck/unit
+   tests and a Metro bundle export — never on hardware. Do this before building
+   anything further on the RN shell. Since the shell was written, it moved to
+   Expo SDK 57 / RN 0.86 (2026-10-04), so this is also the first run on that SDK.
+2. Then pick one: **resume IPTV** (start with the ⏸ live stream-selection bug,
+   then live playback performance) or **open Phase 3**.
 
 ## Phase 0 — Foundations ✅ complete
 
@@ -17,7 +27,8 @@ _Last updated: 2026-08-01_
 - [x] Core/shell boundary: adapter interfaces + composition roots (ADR-0001)
 - [x] Focus/navigation spike — web shell (ADR-0010); dev-only
       `FocusSpikeScreen` behind the toggle. The RN-TV focus spike is deferred
-      to Phase 2 with the shell itself.
+      with TV itself to Phase 3. _(Superseded 2026-07-18: the Reef restyle
+      removed the toggle; `FocusSpikeScreen.tsx` is no longer reachable.)_
 - [x] Governance bootstrap: LICENSE/NOTICE/README/CONTRIBUTING, templates,
       CI, ADRs 0001–0009 (2026-07-07)
 
@@ -95,12 +106,12 @@ Phase 2 (second shell + IPTV).
 
 Built iteratively, one shippable increment at a time. **TV is shelved** to
 Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
-**mobile** (Expo dev client, Android first). See the increment plan for details.
+**mobile** (Expo dev client, Android first). The checklist below is the
+increment record.
 
 > **Everything not paused here has landed (2026-08-01).** With mobile at VOD
 > parity, the only open Phase 2 items are the two ⏸ IPTV ones below, which stay
-> parked with the subsystem. Next up is either resuming IPTV (start with the live
-> stream-selection bug) or opening Phase 3.
+> parked with the subsystem. See [Next up](#next-up).
 
 > **IPTV work is paused (2026-07-29), and the subsystem is gated off by
 > default.** It refreshes playlists/Xtream catalogs and fetches XMLTV guides on
@@ -135,8 +146,8 @@ Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
       (`route-url.ts`); a Play action for live channels; Xtream live via raw
       MPEG-TS (`.ts` → mpegts.js, matching native players — the `.m3u8` HLS
       wrapper often serves a black placeholder); a **dev-only** Vite CORS proxy
-      (`vite-plugin-iptv-proxy.ts`) since IPTV hosts omit `Access-Control-Allow-
-      Origin`; and a muted-autoplay fallback
+      (`vite-plugin-iptv-proxy.ts`) since IPTV hosts omit the
+      `Access-Control-Allow-Origin` header; and a muted-autoplay fallback
 - [ ] ⏸ **Live playback performance** (paused) — web live is playable but **choppy**;
       needs work. Baseline tuning already exists (`mpegts-engine.ts` sets
       `enableStashBuffer: !isLive` + `liveBufferLatencyChasing: isLive`, and
@@ -169,8 +180,7 @@ Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
       `HttpAdapter.getTextStream` streaming seam (gzip in the shell, DOM-less
       core), `core/src/epg` (incremental parser, tvg-id + fuzzy match,
       UTC-normalized now/next+grid model, snapshot cache reusing IndexedDB),
-      `core.epg` (background stale-while-revalidate refresh; Xtream `xmltv.php`
-      + M3U `url-tvg` source discovery), and now/next strips on live channel
+      `core.epg` (background stale-while-revalidate refresh; Xtream `xmltv.php` + M3U `url-tvg` source discovery), and now/next strips on live channel
       rows (`useNowNext`) (ADR-0015, 2026-07-16). **Deferred: the dedicated
       timeline "TV Guide" grid screen.**
 - [x] IndexedDB `StorageAdapter` for web (spec §7.2) — `IdbStorageAdapter`
@@ -187,8 +197,7 @@ Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
       (ADR-0010) into a TV-legible coral ring; the signature coral "tide" progress
       motif recurs on continue-watching, EPG now-bars, and the player seek. Every
       screen restyled (home, search, detail, catalog/categories, settings, addons,
-      playback) with all `data-*`/label test hooks preserved; bundled Space Grotesk
-      + Inter. Removed the dev-only content-id opener + focus-spike toggle. Ported
+      playback) with all `data-*`/label test hooks preserved; bundled Space Grotesk + Inter. Removed the dev-only content-id opener + focus-spike toggle. Ported
       to the RN shell's `src/ui/` alongside the shell-rn screens (2026-08-01).
       **Ongoing — more polish to come** (2026-07-18)
 - [ ] ⏸ **IPTV live stream selection bug** (paused) — playing a live channel can
@@ -217,6 +226,25 @@ Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
 | 13.4 | View-model/state contract                | ✅ plain React state; `CoreProvider`/`useCore` + hooks in shared-ui, no external store (ADR-0011) |
 | 13.5 | Subtitle rendering on web-native players | ⏳ open (Phase 3)                                                                                 |
 | 13.6 | Telemetry/debug mode                     | ⏳ open — engine `onError` hook exists as the seed                                                |
+
+## Dependency holds
+
+Last full refresh 2026-10-04 (Expo SDK 57, TypeScript 6.0, Vite 8, Vitest 5,
+ESLint 10, dependency-cruiser 18). Packages deliberately held below latest, and
+what unblocks each:
+
+| Package                                     | Held at | Why / unblocked by                                                                                                                                                                     |
+| ------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `react`, `react-dom` (+ `@types`)           | 19.2.x  | Expo SDK 57 pins `react@19.2.3`. Root `pnpm.overrides` pins it workspace-wide so Metro bundles one React — without it, shared-ui's devDependency resolves a second copy. Next Expo SDK |
+| `react-native`                              | 0.86.3  | Expo SDK 57 pin. Next Expo SDK                                                                                                                                                         |
+| `@react-native-async-storage/async-storage` | 2.2.0   | Expo SDK 57 pin (v3 is a native-module change). Next Expo SDK                                                                                                                          |
+| `typescript`                                | 6.0     | `typescript-eslint` 8.x peers `typescript <6.1`, so TS 7 waits for typescript-eslint support                                                                                           |
+| `@types/node`                               | 22      | Matches the Node 22 runtime/CI; bump with the engine                                                                                                                                   |
+
+Upgrade Expo with `pnpm exec expo install expo@^<sdk>` then `expo install --fix`
+in `packages/shell-rn`, update the root override to the SDK's React pin, and run
+`npx expo-doctor` plus `pnpm exec expo export --platform android` (a Metro bundle
+check that needs no device).
 
 ## Working conventions
 

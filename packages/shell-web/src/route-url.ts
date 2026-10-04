@@ -31,8 +31,16 @@ const CATALOG_BY_KIND: Record<
   { catalogId: string; type: MediaType; title: string }
 > = {
   live: { catalogId: "iptv:live", type: "tv", title: labels.liveTv },
-  movies: { catalogId: "iptv:movies", type: "movie", title: labels.moviesTitle },
-  series: { catalogId: "iptv:series", type: "series", title: labels.seriesTitle },
+  movies: {
+    catalogId: "iptv:movies",
+    type: "movie",
+    title: labels.moviesTitle,
+  },
+  series: {
+    catalogId: "iptv:series",
+    type: "series",
+    title: labels.seriesTitle,
+  },
 };
 
 // Synthetic category buckets get reserved slugs (a real group named exactly

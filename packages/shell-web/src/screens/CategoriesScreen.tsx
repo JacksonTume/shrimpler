@@ -80,7 +80,9 @@ export function CategoriesScreen({
       )}
 
       {categories.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
           {categories.map((category) => (
             <ListRow
               key={category.key ?? "__all__"}

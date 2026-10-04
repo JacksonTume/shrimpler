@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
-import { iptvProxyPlugin } from "./vite-plugin-iptv-proxy";
+import { iptvProxyPlugin } from "./vite-plugin-iptv-proxy.ts";
 
 // No aliases needed: pnpm workspace resolution maps @shrimpler/* to package
 // source via their "exports" fields.

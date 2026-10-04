@@ -12,9 +12,7 @@ import { CoreProvider } from "../context/core-context";
 import { labels } from "../labels/index";
 import { useCatalogCategories } from "./use-catalog-categories";
 
-function coreWithGenres(
-  getCatalogGenres: () => Promise<CatalogGenre[]>,
-): Core {
+function coreWithGenres(getCatalogGenres: () => Promise<CatalogGenre[]>): Core {
   return { addons: { getCatalogGenres } } as unknown as Core;
 }
 
@@ -54,7 +52,9 @@ describe("useCatalogCategories", () => {
     const { result } = render(
       coreWithGenres(() => Promise.reject(new Error("boom"))),
     );
-    await waitFor(() => expect(result.current.error).toBe(labels.channelsError));
+    await waitFor(() =>
+      expect(result.current.error).toBe(labels.channelsError),
+    );
     expect(result.current.categories).toEqual([]);
   });
 });

@@ -11,9 +11,7 @@ import type { Core } from "@shrimpler/core";
 import { CoreProvider } from "../context/core-context";
 import { useIptvRefresh } from "./use-iptv-refresh";
 
-function coreWithRefresh(
-  refresh: () => Promise<{ changed: boolean }>,
-): Core {
+function coreWithRefresh(refresh: () => Promise<{ changed: boolean }>): Core {
   return { iptv: { refresh } } as unknown as Core;
 }
 

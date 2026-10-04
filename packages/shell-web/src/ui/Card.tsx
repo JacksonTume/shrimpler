@@ -5,7 +5,13 @@
 
 import type { ReactNode } from "react";
 
-export function Card({ title, children }: { title?: string; children: ReactNode }) {
+export function Card({
+  title,
+  children,
+}: {
+  title?: string;
+  children: ReactNode;
+}) {
   return (
     <section
       style={{
@@ -17,7 +23,13 @@ export function Card({ title, children }: { title?: string; children: ReactNode 
       }}
     >
       {title !== undefined && (
-        <h2 style={{ fontSize: "var(--fs-h2)", fontWeight: 700, marginBottom: "0.85rem" }}>
+        <h2
+          style={{
+            fontSize: "var(--fs-h2)",
+            fontWeight: 700,
+            marginBottom: "0.85rem",
+          }}
+        >
           {title}
         </h2>
       )}
