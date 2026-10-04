@@ -9,11 +9,10 @@ import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 import { useFocusable } from "../focus";
 import { TideBar } from "./TideBar";
 
-interface PosterCardProps
-  extends Omit<
-    ButtonHTMLAttributes<HTMLButtonElement>,
-    "onClick" | "style" | "title"
-  > {
+interface PosterCardProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "onClick" | "style" | "title"
+> {
   title: ReactNode;
   poster?: string;
   posterShape?: "poster" | "square";

@@ -9,11 +9,10 @@
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 import { useFocusable } from "../focus";
 
-interface ListRowProps
-  extends Omit<
-    ButtonHTMLAttributes<HTMLButtonElement>,
-    "onClick" | "style" | "title"
-  > {
+interface ListRowProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "onClick" | "style" | "title"
+> {
   title: ReactNode;
   subtitle?: ReactNode;
   leading?: ReactNode;

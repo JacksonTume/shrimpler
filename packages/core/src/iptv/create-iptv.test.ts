@@ -36,9 +36,7 @@ function memoryStorage(seed: Record<string, unknown> = {}): StorageAdapter {
       return Promise.resolve();
     },
     keys: (prefix = "") =>
-      Promise.resolve(
-        [...store.keys()].filter((k) => k.startsWith(prefix)),
-      ),
+      Promise.resolve([...store.keys()].filter((k) => k.startsWith(prefix))),
   };
 }
 

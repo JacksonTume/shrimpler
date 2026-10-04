@@ -38,7 +38,9 @@ export function EmptyState({
       {hint !== undefined && (
         <span style={{ color: "var(--sand-dim)" }}>{hint}</span>
       )}
-      {action !== undefined && <div style={{ marginTop: "0.5rem" }}>{action}</div>}
+      {action !== undefined && (
+        <div style={{ marginTop: "0.5rem" }}>{action}</div>
+      )}
     </div>
   );
 }

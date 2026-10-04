@@ -49,7 +49,8 @@
   --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
 
   /* Spatial-nav focus ring — deliberately loud for a 10-foot TV UI. */
-  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--coral),
+  --focus-ring:
+    0 0 0 2px var(--bg), 0 0 0 4px var(--coral),
     0 0 14px rgba(255, 110, 90, 0.55);
 
   color-scheme: dark;

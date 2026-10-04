@@ -69,9 +69,7 @@ export function createIptvContentCache(
   const metaKey = (sourceKey: string): string => `${META_PREFIX}${sourceKey}`;
   const bodyKey = (sourceKey: string): string => `${BODY_PREFIX}${sourceKey}`;
 
-  async function readMeta(
-    sourceKey: string,
-  ): Promise<IptvSnapshotMeta | null> {
+  async function readMeta(sourceKey: string): Promise<IptvSnapshotMeta | null> {
     const meta = await storage.get<IptvSnapshotMeta>(metaKey(sourceKey));
     if (meta === null || meta.version !== IPTV_SNAPSHOT_VERSION) {
       return null;

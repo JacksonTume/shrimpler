@@ -32,10 +32,7 @@ export type {
   IptvRefreshProgress,
   IptvRefreshPhase,
 } from "./create-iptv";
-export {
-  createIptvContentCache,
-  IPTV_SNAPSHOT_VERSION,
-} from "./iptv-cache";
+export { createIptvContentCache, IPTV_SNAPSHOT_VERSION } from "./iptv-cache";
 export type {
   IptvContentCache,
   IptvContentCacheDeps,

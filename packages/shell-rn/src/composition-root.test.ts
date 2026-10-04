@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 
 // Same native-module mock as rn-storage.test: an empty store means no persisted
 // TMDB key / debrid token, so createRnCore composes a Core with no providers.
-const { fakeStore } = vi.hoisted(() => ({ fakeStore: new Map<string, string>() }));
+const { fakeStore } = vi.hoisted(() => ({
+  fakeStore: new Map<string, string>(),
+}));
 vi.mock("@react-native-async-storage/async-storage", () => ({
   default: {
     getItem: (key: string): Promise<string | null> =>

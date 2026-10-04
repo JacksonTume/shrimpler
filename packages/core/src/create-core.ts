@@ -175,8 +175,7 @@ export async function createCore(deps: CoreDependencies): Promise<Core> {
       now: deps.now,
       onError: deps.onError,
     }),
-    listSources: () =>
-      listEpgSources({ storage: deps.storage, iptvCache }),
+    listSources: () => listEpgSources({ storage: deps.storage, iptvCache }),
     now: deps.now,
     onError: deps.onError,
     enabled: iptvEnabled,

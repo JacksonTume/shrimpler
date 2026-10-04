@@ -329,7 +329,9 @@ describe("Html5VideoPlayerAdapter", () => {
       const cb = vi.fn();
       adapter.on("error", cb);
 
-      const pending = adapter.load(source({ kind: "live", url: "https://cdn/x.ts" }));
+      const pending = adapter.load(
+        source({ kind: "live", url: "https://cdn/x.ts" }),
+      );
       engine.callbacks?.onFatalError("mediaMSEError");
 
       await expect(pending).rejects.toThrow(/mediaMSEError/);
@@ -342,7 +344,9 @@ describe("Html5VideoPlayerAdapter", () => {
     it("destroys the mpegts engine on destroy", async () => {
       const { engine, factory } = fakeMpegts();
       const adapter = mpegtsAdapter(factory);
-      const pending = adapter.load(source({ kind: "live", url: "https://cdn/x.ts" }));
+      const pending = adapter.load(
+        source({ kind: "live", url: "https://cdn/x.ts" }),
+      );
       engine.callbacks?.onManifestParsed();
       await pending;
 

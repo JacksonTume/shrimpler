@@ -8,7 +8,10 @@
 
 import { Readable, pipeline } from "node:stream";
 import type { Plugin } from "vite";
-import { IPTV_PROXY_PREFIX, rewriteHlsPlaylist } from "./src/players/hls-proxy.ts";
+import {
+  IPTV_PROXY_PREFIX,
+  rewriteHlsPlaylist,
+} from "./src/players/hls-proxy.ts";
 
 const M3U8_RE = /\.m3u8(\?|#|$)/i;
 const PASS_THROUGH_HEADERS = [

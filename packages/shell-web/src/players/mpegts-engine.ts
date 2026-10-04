@@ -51,7 +51,9 @@ export function createMpegtsEngine(options: StreamEngineOptions): StreamEngine {
               liveBufferLatencyChasing: isLive,
             },
           );
-          player.on(mpegts.Events.MEDIA_INFO, () => callbacks.onManifestParsed());
+          player.on(mpegts.Events.MEDIA_INFO, () =>
+            callbacks.onManifestParsed(),
+          );
           player.on(
             mpegts.Events.ERROR,
             (type: string, detail: string, info?: unknown) => {
@@ -75,7 +77,9 @@ export function createMpegtsEngine(options: StreamEngineOptions): StreamEngine {
           player.attachMediaElement(video);
           player.load();
         })
-        .catch(() => callbacks.onFatalError("Failed to load the MPEG-TS engine"));
+        .catch(() =>
+          callbacks.onFatalError("Failed to load the MPEG-TS engine"),
+        );
     },
     destroy(): void {
       destroyed = true;

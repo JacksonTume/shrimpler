@@ -95,7 +95,12 @@ const MOVIE: MetaPreview = {
 };
 
 function channel(i: number): MetaPreview {
-  return { id: `iptv:live:c${i}`, type: "tv", name: `C${i}`, posterShape: "square" };
+  return {
+    id: `iptv:live:c${i}`,
+    type: "tv",
+    name: `C${i}`,
+    posterShape: "square",
+  };
 }
 
 describe("CatalogScreen", () => {

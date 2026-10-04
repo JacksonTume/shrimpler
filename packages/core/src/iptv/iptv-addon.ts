@@ -225,11 +225,7 @@ export function createIptvAddon(
     (c) => c.group,
   );
   const movieIndex = buildIndex(content.movies, moviePreview, (m) => m.group);
-  const seriesIndex = buildIndex(
-    content.series,
-    seriesPreview,
-    (s) => s.group,
-  );
+  const seriesIndex = buildIndex(content.series, seriesPreview, (s) => s.group);
 
   /** Resolve (type, catalogId) → its index, or null when the pair isn't ours. */
   function indexFor(type: MediaType, catalogId: string): CatalogIndex | null {

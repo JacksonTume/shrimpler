@@ -53,7 +53,9 @@ function EntryRow({
       }}
       {...rest}
     >
-      <span style={{ flex: 1, minWidth: 0, wordBreak: "break-all" }}>{label}</span>
+      <span style={{ flex: 1, minWidth: 0, wordBreak: "break-all" }}>
+        {label}
+      </span>
       {actions}
     </div>
   );
@@ -151,7 +153,11 @@ function AddonRow({
   );
 }
 
-function IptvPlaylistsSection({ reloadCore }: { reloadCore: () => Promise<void> }) {
+function IptvPlaylistsSection({
+  reloadCore,
+}: {
+  reloadCore: () => Promise<void>;
+}) {
   const { playlists, isSaving, error, addPlaylist, removePlaylist } =
     useIptvPlaylists(reloadCore);
   const [url, setUrl] = useState("");
@@ -227,7 +233,11 @@ function IptvPlaylistsSection({ reloadCore }: { reloadCore: () => Promise<void> 
   );
 }
 
-function IptvXtreamSection({ reloadCore }: { reloadCore: () => Promise<void> }) {
+function IptvXtreamSection({
+  reloadCore,
+}: {
+  reloadCore: () => Promise<void>;
+}) {
   const { accounts, isSaving, error, addAccount, removeAccount } =
     useIptvXtream(reloadCore);
   const [host, setHost] = useState("");
@@ -253,7 +263,9 @@ function IptvXtreamSection({ reloadCore }: { reloadCore: () => Promise<void> }) 
   return (
     <Card title={labels.xtreamTitle}>
       <form onSubmit={onSubmit}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}
+        >
           <TextField
             label={labels.xtreamHost}
             type="url"

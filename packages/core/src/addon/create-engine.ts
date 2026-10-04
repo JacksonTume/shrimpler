@@ -114,10 +114,7 @@ interface AddonTarget {
     catalogId: string,
     extra?: CatalogExtra,
   ): Promise<MetaPreview[]>;
-  getCatalogGenres(
-    type: MediaType,
-    catalogId: string,
-  ): Promise<CatalogGenre[]>;
+  getCatalogGenres(type: MediaType, catalogId: string): Promise<CatalogGenre[]>;
   getMeta(id: ContentId, type: MediaType): Promise<MetaDetail | null>;
   getStreams(id: ContentId, type: MediaType): Promise<PlayableSource[]>;
   getSubtitles(id: ContentId, type: MediaType): Promise<SubtitleTrack[]>;
@@ -341,9 +338,7 @@ export async function createAddonEngine(
       for (const genre of perAddon.flat()) {
         counts.set(genre.name, (counts.get(genre.name) ?? 0) + genre.count);
       }
-      return sortGenres(
-        [...counts].map(([name, count]) => ({ name, count })),
-      );
+      return sortGenres([...counts].map(([name, count]) => ({ name, count })));
     },
 
     async getMeta(id: ContentId, type: MediaType): Promise<MetaDetail | null> {

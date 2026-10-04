@@ -5,11 +5,7 @@
 // request headers including User-Agent/Referer (the browser forbids these), so
 // header-gated IPTV CDNs that fail on web work on mobile (ADR-0006).
 
-import type {
-  HttpAdapter,
-  HttpOpts,
-  HttpResponse,
-} from "@shrimpler/core";
+import type { HttpAdapter, HttpOpts, HttpResponse } from "@shrimpler/core";
 
 /** url-encode a flat string map as an application/x-www-form-urlencoded body. */
 function encodeForm(params: Record<string, string>): string {

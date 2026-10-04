@@ -136,7 +136,7 @@ Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
       MPEG-TS (`.ts` → mpegts.js, matching native players — the `.m3u8` HLS
       wrapper often serves a black placeholder); a **dev-only** Vite CORS proxy
       (`vite-plugin-iptv-proxy.ts`) since IPTV hosts omit `Access-Control-Allow-
-      Origin`; and a muted-autoplay fallback
+    Origin`; and a muted-autoplay fallback
 - [ ] ⏸ **Live playback performance** (paused) — web live is playable but **choppy**;
       needs work. Baseline tuning already exists (`mpegts-engine.ts` sets
       `enableStashBuffer: !isLive` + `liveBufferLatencyChasing: isLive`, and
@@ -169,8 +169,7 @@ Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
       `HttpAdapter.getTextStream` streaming seam (gzip in the shell, DOM-less
       core), `core/src/epg` (incremental parser, tvg-id + fuzzy match,
       UTC-normalized now/next+grid model, snapshot cache reusing IndexedDB),
-      `core.epg` (background stale-while-revalidate refresh; Xtream `xmltv.php`
-      + M3U `url-tvg` source discovery), and now/next strips on live channel
+      `core.epg` (background stale-while-revalidate refresh; Xtream `xmltv.php` + M3U `url-tvg` source discovery), and now/next strips on live channel
       rows (`useNowNext`) (ADR-0015, 2026-07-16). **Deferred: the dedicated
       timeline "TV Guide" grid screen.**
 - [x] IndexedDB `StorageAdapter` for web (spec §7.2) — `IdbStorageAdapter`
@@ -187,8 +186,7 @@ Phase 3 (Tizen/webOS, react-native-tvos, D-pad focus); the second shell targets
       (ADR-0010) into a TV-legible coral ring; the signature coral "tide" progress
       motif recurs on continue-watching, EPG now-bars, and the player seek. Every
       screen restyled (home, search, detail, catalog/categories, settings, addons,
-      playback) with all `data-*`/label test hooks preserved; bundled Space Grotesk
-      + Inter. Removed the dev-only content-id opener + focus-spike toggle. Ported
+      playback) with all `data-*`/label test hooks preserved; bundled Space Grotesk + Inter. Removed the dev-only content-id opener + focus-spike toggle. Ported
       to the RN shell's `src/ui/` alongside the shell-rn screens (2026-08-01).
       **Ongoing — more polish to come** (2026-07-18)
 - [ ] ⏸ **IPTV live stream selection bug** (paused) — playing a live channel can

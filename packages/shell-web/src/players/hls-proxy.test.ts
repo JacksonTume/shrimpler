@@ -3,7 +3,11 @@
 // rewriting (relative + cross-host segments, URI="…" tags, passthrough lines).
 
 import { describe, expect, it } from "vitest";
-import { IPTV_PROXY_PREFIX, proxyStreamUrl, rewriteHlsPlaylist } from "./hls-proxy";
+import {
+  IPTV_PROXY_PREFIX,
+  proxyStreamUrl,
+  rewriteHlsPlaylist,
+} from "./hls-proxy";
 
 describe("proxyStreamUrl", () => {
   it("wraps an absolute url as a same-origin proxy path", () => {
@@ -32,9 +36,7 @@ describe("rewriteHlsPlaylist", () => {
     expect(out[0]).toBe("#EXTM3U");
     expect(out[2]).toBe("#EXTINF:6.0,");
     // Relative segment resolves against the playlist url.
-    expect(out[3]).toBe(
-      proxyStreamUrl("http://292910.xyz/live/u/p/seg1.ts"),
-    );
+    expect(out[3]).toBe(proxyStreamUrl("http://292910.xyz/live/u/p/seg1.ts"));
     // Absolute cross-host CDN segment is proxied verbatim.
     expect(out[5]).toBe(
       proxyStreamUrl("http://video1.c2.wdcdn8s.com/video/black.ts"),
@@ -43,10 +45,10 @@ describe("rewriteHlsPlaylist", () => {
     expect(out[6]).toBe("");
   });
 
-  it("rewrites URI=\"…\" attributes on key/map/media tags", () => {
+  it('rewrites URI="…" attributes on key/map/media tags', () => {
     const body = [
-      "#EXT-X-KEY:METHOD=AES-128,URI=\"key.bin\"",
-      "#EXT-X-MAP:URI=\"http://cdn/init.mp4\"",
+      '#EXT-X-KEY:METHOD=AES-128,URI="key.bin"',
+      '#EXT-X-MAP:URI="http://cdn/init.mp4"',
     ].join("\n");
 
     const out = rewriteHlsPlaylist(body, base).split("\n");

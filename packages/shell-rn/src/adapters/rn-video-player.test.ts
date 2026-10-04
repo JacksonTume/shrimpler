@@ -78,7 +78,9 @@ describe("RnVideoPlayerAdapter", () => {
     const rig = makeRig();
     const adapter = new RnVideoPlayerAdapter(rig.factory);
     const loading = adapter.load(source());
-    rig.callbacks().onLoad({ durationSec: 10, audioTracks: [], subtitleTracks: [] });
+    rig
+      .callbacks()
+      .onLoad({ durationSec: 10, audioTracks: [], subtitleTracks: [] });
     await loading;
 
     adapter.play();
@@ -100,7 +102,9 @@ describe("RnVideoPlayerAdapter", () => {
       }
     });
     const loading = adapter.load(source());
-    rig.callbacks().onLoad({ durationSec: 10, audioTracks: [], subtitleTracks: [] });
+    rig
+      .callbacks()
+      .onLoad({ durationSec: 10, audioTracks: [], subtitleTracks: [] });
     await loading;
 
     rig.callbacks().onProgress({ positionSec: 3, bufferedSec: 5 });
@@ -125,7 +129,9 @@ describe("RnVideoPlayerAdapter", () => {
     const rig = makeRig();
     const adapter = new RnVideoPlayerAdapter(rig.factory);
     const loading = adapter.load(source());
-    rig.callbacks().onLoad({ durationSec: 1, audioTracks: [], subtitleTracks: [] });
+    rig
+      .callbacks()
+      .onLoad({ durationSec: 1, audioTracks: [], subtitleTracks: [] });
     await loading;
     adapter.destroy();
     expect(rig.calls).toContain("destroy");
