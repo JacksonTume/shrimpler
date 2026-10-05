@@ -6,17 +6,62 @@ honest — this file is the entry point for anyone (human or agent) picking up
 work. Architectural decisions live in [adr/](adr/README.md); do not re-litigate
 them here.
 
-_Last updated: 2026-10-04_
+_Last updated: 2026-10-05_
 
 ## Next up
 
-1. **First real run of `shell-rn`** on an Android device or emulator (Expo dev
-   client). Mobile VOD parity has only been verified by lint/typecheck/unit
-   tests and a Metro bundle export — never on hardware. Do this before building
-   anything further on the RN shell. Since the shell was written, it moved to
-   Expo SDK 57 / RN 0.86 (2026-10-04), so this is also the first run on that SDK.
-2. Then pick one: **resume IPTV** (start with the ⏸ live stream-selection bug,
-   then live playback performance) or **open Phase 3**.
+1. **Web roadmap planning session** (decided 2026-10-05): web comes before any
+   further RN work. Hold a dedicated session to work out what the web build
+   still needs. Inputs: [Web shell — known bugs and gaps](#web-shell--known-bugs-and-gaps),
+   the open Phase 3 items, and the paused IPTV items. Settle scope, priority and
+   order, including whether the two web bugs go first. The output is a
+   prioritized web build plan written into this file, replacing this item.
+2. **First real run of `shell-rn`** on an Android device or emulator (Expo dev
+   client), once the web plan is underway. Mobile VOD parity has only been
+   verified by lint/typecheck/unit tests and a Metro bundle export — never on
+   hardware. Do this before building anything further on the RN shell. Since
+   the shell was written, it moved to Expo SDK 57 / RN 0.86 (2026-10-04), so
+   this is also the first run on that SDK.
+
+**Waiting on a decision** (raised 2026-10-04/05, not yet answered):
+
+- Add `pnpm format` (`prettier --check`) to `verify` and CI. Formatting had
+  drifted across ~44 files because neither runs it.
+- Delete the unreachable `packages/shell-web/src/screens/FocusSpikeScreen.tsx`
+  and its test.
+- Write an ADR superseding ADR-0001's "RN-TV shell" wording for the
+  mobile-first RN shell. So far the pivot is recorded only here and in the
+  spec's superseded notes.
+
+## Web shell — known bugs and gaps
+
+Found driving the dev build on 2026-10-05, and by reading the screens. Bugs
+first, then missing features not already listed under a phase.
+
+- **Bug: Enter doesn't submit forms.** Confirmed on Search (only clicking the
+  button searches). The spatial-nav engine's keydown listener calls
+  `preventDefault()` on every mapped key (arrows and Enter) unless
+  `shouldUseNativeEvents` is set (`norigin-spatial-navigation-core`,
+  `BaseWebAdapter.addEventListeners`), so the Sources and Settings forms are
+  affected by the same mechanism. Not a regression from the 2026-10-04
+  dependency bump: core 4.0.0 behaves the same. Unverified side effect:
+  Left/Right inside a text field may move focus instead of the caret.
+- **Bug: Back from detail always goes Home** (`goHome` in `DetailScreen.tsx`),
+  dropping the search results the user came from.
+- **Player controls are minimal:** no volume/mute (so no way to unmute after
+  the muted-autoplay fallback), no fullscreen, no subtitle or audio-track
+  picker, no next-episode. The seek bar's `aria-label` reuses `labels.play`.
+- **Continue watching:** no way to remove an entry. A series entry opens
+  detail rather than resuming the episode.
+- **Installed addons' catalogs aren't browsable.** The home screen has no
+  addon catalog rows (`buildHomeFeeds` is minimal; home feeds are Phase 3) and
+  search is TMDB-only, so without a TMDB key there is no way to find content.
+  The catalog/categories screens are IPTV-only.
+- **No PWA:** no web manifest or service worker, though the README positions
+  the web shell as browser/PWA.
+- **IPTV in a production build:** the CORS proxy (`vite-plugin-iptv-proxy.ts`)
+  is dev-only, so live playback from hosts without CORS headers will fail
+  outside `pnpm dev`. Comes with resuming IPTV.
 
 ## Phase 0 — Foundations ✅ complete
 
@@ -221,7 +266,7 @@ increment record.
 | #    | Decision                                 | Status                                                                                            |
 | ---- | ---------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | 13.1 | Monorepo tooling                         | ✅ pnpm workspaces only; add Turborepo/Nx if build times demand it                                |
-| 13.2 | First shell                              | ✅ Web (Vite + React); RN-TV in Phase 2                                                           |
+| 13.2 | First shell                              | ✅ Web (Vite + React); RN shell in Phase 2, built as Expo mobile (TV moved to Phase 3)            |
 | 13.3 | Debrid provider for MVP                  | ✅ Real-Debrid (ADR-0013); debrid seam stays generic for AllDebrid/Premiumize later               |
 | 13.4 | View-model/state contract                | ✅ plain React state; `CoreProvider`/`useCore` + hooks in shared-ui, no external store (ADR-0011) |
 | 13.5 | Subtitle rendering on web-native players | ⏳ open (Phase 3)                                                                                 |
