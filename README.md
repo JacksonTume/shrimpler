@@ -27,7 +27,7 @@ architecture.
 | Path                 | Package                | Purpose                                                                                                              |
 | -------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | `packages/core`      | `@shrimpler/core`      | Pure-TS shared brain: addon engine, metadata resolution, debrid, IPTV, library, ranking. Zero platform dependencies. |
-| `packages/shared-ui` | `@shrimpler/shared-ui` | React logic shared by shells: view-models and the neutral labels module.                                             |
+| `packages/shared-ui` | `@shrimpler/shared-ui` | React logic shared by shells: view-models, the neutral labels module, and the Reef design tokens (ADR-0016).         |
 | `packages/shell-web` | `@shrimpler/shell-web` | React DOM shell (Vite): browser/PWA, later Tizen/webOS.                                                              |
 | `packages/shell-rn`  | `@shrimpler/shell-rn`  | React Native shell (Expo dev client): Android mobile first, TV later.                                                |
 | `docs/`              | —                      | Technical spec and architecture decision records (ADRs).                                                             |
