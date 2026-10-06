@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
-/* Reef — the web shell's design foundation: tokens, base element styling, the
- * global spatial-nav focus ring, and the one signature motion (the coral "tide"
- * crest). Components style themselves with inline `var(--token)` styles, matching
+/* Reef — the web shell's design foundation (ADR-0016): web-only tokens (the
+ * shared palette and radii are injected from shared-ui — see :root), base element
+ * styling, the global spatial-nav focus ring, and the one signature motion (the
+ * coral "tide" crest). Components style themselves with inline `var(--token)` styles, matching
  * the shell's existing inline-style idiom; this file owns only what inline styles
  * cannot: tokens, resets, pseudo-elements (the seek bar), and keyframes. Imported
  * once from main.tsx. Old-Chromium-safe (custom properties, flexbox/grid only). */
@@ -14,19 +15,10 @@
 @import "@fontsource/inter/600.css";
 
 :root {
-  /* Palette — Reef, dark-first. */
-  --bg: #0e1a1e;
-  --surface: #14262b;
-  --surface-2: #1b333a;
-  --coral: #ff6e5a;
-  --coral-deep: #e8503b;
-  --seafoam: #6fd9c0;
-  --sand: #f3ebe0;
-  --sand-dim: rgba(243, 235, 224, 0.66);
-  --sand-faint: rgba(243, 235, 224, 0.4);
-  --line: rgba(243, 235, 224, 0.1);
-  --line-strong: rgba(243, 235, 224, 0.18);
-  --danger: #ff9b86;
+  /* Palette (--bg, --coral, --sand-dim, …), radii (--r-sm … --r-pill) and
+   * --coral-rgb are NOT declared here: they come from shared-ui's Reef tokens
+   * and are written onto <html> by applyReefTokens() in main.tsx (ADR-0016).
+   * This block holds only the web-specific tokens. */
 
   /* Type. */
   --font-display: "Space Grotesk", system-ui, "Segoe UI", sans-serif;
@@ -40,18 +32,14 @@
   --lh-tight: 1.12;
   --lh: 1.5;
 
-  /* Radius / depth. */
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 18px;
-  --r-pill: 999px;
+  /* Depth. */
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
 
   /* Spatial-nav focus ring — deliberately loud for a 10-foot TV UI. */
   --focus-ring:
     0 0 0 2px var(--bg), 0 0 0 4px var(--coral),
-    0 0 14px rgba(255, 110, 90, 0.55);
+    0 0 14px rgba(var(--coral-rgb), 0.55);
 
   color-scheme: dark;
 }
@@ -127,7 +115,7 @@ a {
 }
 
 ::selection {
-  background: rgba(255, 110, 90, 0.35);
+  background: rgba(var(--coral-rgb), 0.35);
   color: var(--sand);
 }
 
@@ -163,7 +151,7 @@ a {
   height: 16px;
   border-radius: 50%;
   background: var(--coral);
-  box-shadow: 0 0 0 4px rgba(255, 110, 90, 0.25);
+  box-shadow: 0 0 0 4px rgba(var(--coral-rgb), 0.25);
 }
 .reef-seek::-moz-range-thumb {
   width: 16px;

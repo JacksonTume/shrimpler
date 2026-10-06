@@ -7,7 +7,10 @@ import type { Core } from "@shrimpler/core";
 import { App } from "./App";
 import { createWebCore } from "./composition-root";
 import { initBackHandling, initFocusEngine } from "./focus";
+import { applyReefTokens } from "./ui/tokens";
 
+// Shared Reef palette + radii onto :root before anything renders (ADR-0016).
+applyReefTokens();
 initFocusEngine();
 initBackHandling();
 

@@ -15,7 +15,7 @@ const toneStyle: Record<BadgeTone, CSSProperties> = {
     fontWeight: 600,
   },
   cached: {
-    background: "rgba(111, 217, 192, 0.16)",
+    background: "var(--seafoam-tint)",
     color: "var(--seafoam)",
     fontWeight: 500,
   },

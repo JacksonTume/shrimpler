@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
 
 const pillTones = StyleSheet.create({
   live: { backgroundColor: color.coral },
-  cached: { backgroundColor: "rgba(111, 217, 192, 0.16)" },
+  cached: { backgroundColor: color.seafoamTint },
   neutral: { backgroundColor: color.surface2 },
 });
 
