@@ -6,7 +6,7 @@ honest — this file is the entry point for anyone (human or agent) picking up
 work. Architectural decisions live in [adr/](adr/README.md); do not re-litigate
 them here.
 
-_Last updated: 2026-10-05_
+_Last updated: 2026-10-06_
 
 ## Next up
 
@@ -244,7 +244,10 @@ increment record.
       screen restyled (home, search, detail, catalog/categories, settings, addons,
       playback) with all `data-*`/label test hooks preserved; bundled Space Grotesk + Inter. Removed the dev-only content-id opener + focus-spike toggle. Ported
       to the RN shell's `src/ui/` alongside the shell-rn screens (2026-08-01).
-      **Ongoing — more polish to come** (2026-07-18)
+      Recorded in ADR-0016 (2026-10-06), which also moved the palette + radii to
+      a single source in `shared-ui/src/theme/reef.ts`. **Ongoing — more polish
+      to come**; the RN font/gradient deviations wait on the first device run
+      (2026-07-18)
 - [ ] ⏸ **IPTV live stream selection bug** (paused) — playing a live channel can
       play the wrong stream (e.g. selecting an "NZ" channel plays a different
       one). Points at a channel-id → stream mismatch on the internal-addon live

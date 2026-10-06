@@ -42,7 +42,7 @@ export function Dialog({
           position: "fixed",
           inset: 0,
           zIndex: 30,
-          background: "rgba(4, 10, 12, 0.72)",
+          background: "var(--scrim)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",

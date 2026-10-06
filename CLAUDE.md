@@ -63,6 +63,9 @@ the RN bundle without a device, run `pnpm exec expo export --platform android` i
 
 - `// SPDX-License-Identifier: AGPL-3.0-or-later` header on every source file.
 - User-facing strings go through `packages/shared-ui/src/labels`.
+- Reef UI (ADR-0016): palette + radii live only in `packages/shared-ui/src/theme/reef.ts`;
+  the web shell injects them as CSS vars (`applyReefTokens`), RN re-exports them. Web
+  components use inline `var(--token)` styles; `theme.css` holds only what inline can't.
 - **Neutrality is a hard rule:** no bundled sources, and no source/manifest/playlist
   URLs in code, docs, tests, or examples (ADR-0007, CONTRIBUTING.md).
 - Credentials (TMDB key, Real-Debrid token, IPTV accounts) are user-supplied and

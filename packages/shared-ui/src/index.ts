@@ -4,6 +4,9 @@
 export { labels } from "./labels/index";
 export type { LabelKey } from "./labels/index";
 
+export { reefColor, reefRadius } from "./theme/reef";
+export type { ReefColor, ReefRadius } from "./theme/reef";
+
 export { CoreProvider, useCore } from "./context/core-context";
 
 export { useAddonManager } from "./viewmodels/index";

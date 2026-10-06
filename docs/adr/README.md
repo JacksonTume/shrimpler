@@ -20,3 +20,4 @@ propose changes to one by opening a new superseding ADR, not by editing.
 | [ADR-0013](ADR-0013-debrid-resolver-real-debrid.md)      | Debrid resolver: Real-Debrid (v1); streams pivot to IMDb ids         |
 | [ADR-0014](ADR-0014-continue-watching-library.md)        | Continue-watching library: data model, keys, throttle, eviction      |
 | [ADR-0015](ADR-0015-epg-streaming-xmltv.md)              | EPG pipeline: streaming XMLTV parse, tvg-id matching, snapshot cache |
+| [ADR-0016](ADR-0016-reef-ui-kit-shared-tokens.md)        | Reef: in-house UI kit per shell, design tokens shared via shared-ui  |

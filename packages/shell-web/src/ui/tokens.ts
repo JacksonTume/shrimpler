@@ -1,24 +1,45 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Reef token values for the rare JS-side need (most styling references the CSS
-// custom properties in theme.css via `var(--…)`). Keep in sync with :root there.
+// Reef tokens for the web shell. The palette and radii come from shared-ui
+// (ADR-0016) and are written onto :root as CSS custom properties at startup, so
+// theme.css and every inline `var(--…)` style read the shared values. Web-only
+// tokens (type scale, fonts, shadows, the focus ring) stay in theme.css.
 
-export const color = {
-  bg: "#0e1a1e",
-  surface: "#14262b",
-  surface2: "#1b333a",
-  coral: "#ff6e5a",
-  coralDeep: "#e8503b",
-  seafoam: "#6fd9c0",
-  sand: "#f3ebe0",
-  sandDim: "rgba(243, 235, 224, 0.66)",
-  sandFaint: "rgba(243, 235, 224, 0.4)",
-  line: "rgba(243, 235, 224, 0.1)",
-  danger: "#ff9b86",
-} as const;
+import { reefColor, reefRadius } from "@shrimpler/shared-ui";
 
-export const radius = {
-  sm: "8px",
-  md: "12px",
-  lg: "18px",
-  pill: "999px",
-} as const;
+export { reefColor as color, reefRadius as radius };
+
+/** `surface2` → `surface-2`, `coralDeep` → `coral-deep`. */
+function kebab(name: string): string {
+  return name.replace(/([a-z])([A-Z0-9])/g, "$1-$2").toLowerCase();
+}
+
+/** `#ff6e5a` → `255, 110, 90`, for `rgba(var(--coral-rgb), α)` tints. */
+function hexToRgbTriplet(hex: string): string {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return `${(n >> 16) & 0xff}, ${(n >> 8) & 0xff}, ${n & 0xff}`;
+}
+
+/** Every shared token as a CSS custom property name → value. */
+export function reefCssVars(): Record<string, string> {
+  const vars: Record<string, string> = {};
+  for (const [name, value] of Object.entries(reefColor)) {
+    vars[`--${kebab(name)}`] = value;
+  }
+  for (const [name, px] of Object.entries(reefRadius)) {
+    vars[`--r-${kebab(name)}`] = `${px}px`;
+  }
+  vars["--coral-rgb"] = hexToRgbTriplet(reefColor.coral);
+  return vars;
+}
+
+/**
+ * Write the shared tokens onto the root element. Called once from main.tsx
+ * before first render; index.html carries a hard-coded bg for the pre-JS paint.
+ */
+export function applyReefTokens(
+  root: HTMLElement = document.documentElement,
+): void {
+  for (const [name, value] of Object.entries(reefCssVars())) {
+    root.style.setProperty(name, value);
+  }
+}
