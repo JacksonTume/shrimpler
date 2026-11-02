@@ -9,7 +9,7 @@
 // IPTV gate. Those are not ported yet: the subsystem is off on mobile
 // (features.ts) and paused project-wide, so they would be unreachable UI for a
 // subsystem nothing refreshes. They belong with the IPTV increment that brings
-// the catalog/categories screens (docs/ROADMAP.md).
+// the catalog/categories screens (GitHub issues labelled `iptv`).
 
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";

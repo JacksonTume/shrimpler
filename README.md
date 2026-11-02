@@ -66,7 +66,7 @@ on the Settings screen, or in dev via a git-ignored `.env` (see
 optional — without them the app still runs on addon-supplied metadata and
 direct-URL streams.
 
-IPTV + EPG is **off by default** while that work is paused (see the roadmap).
+IPTV + EPG is **off by default** while that work is paused (GitHub issues labelled `paused`).
 Opt in on web with `VITE_IPTV_ENABLED=true` in the same `.env`; the RN shell's
 gate is a constant in `packages/shell-rn/src/features.ts`.
 
@@ -78,7 +78,8 @@ pnpm --filter @shrimpler/shell-rn android   # build + install the dev client
 pnpm --filter @shrimpler/shell-rn start     # Metro for an installed dev client
 ```
 
-Current status and what to work on next: [docs/ROADMAP.md](docs/ROADMAP.md).
+Current status and what to work on next: the repository's GitHub Issues
+(`gh issue list --label priority:high`).
 
 ## Testing
 
@@ -115,6 +116,25 @@ the engine against a manifest without the UI.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR — note especially
 the project-scope rules (no bundled sources of any kind).
+
+## Dependencies
+
+Last full refresh 2026-10-04 (Expo SDK 57, TypeScript 6.0, Vite 8, Vitest 5,
+ESLint 10, dependency-cruiser 18). Packages deliberately held below latest, and
+what unblocks each:
+
+| Package                                     | Held at | Why / unblocked by                                                                                                                                                                     |
+| ------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `react`, `react-dom` (+ `@types`)           | 19.2.x  | Expo SDK 57 pins `react@19.2.3`. Root `pnpm.overrides` pins it workspace-wide so Metro bundles one React — without it, shared-ui's devDependency resolves a second copy. Next Expo SDK |
+| `react-native`                              | 0.86.3  | Expo SDK 57 pin. Next Expo SDK                                                                                                                                                         |
+| `@react-native-async-storage/async-storage` | 2.2.0   | Expo SDK 57 pin (v3 is a native-module change). Next Expo SDK                                                                                                                          |
+| `typescript`                                | 6.0     | `typescript-eslint` 8.x peers `typescript <6.1`, so TS 7 waits for typescript-eslint support                                                                                           |
+| `@types/node`                               | 22      | Matches the Node 22 runtime/CI; bump with the engine                                                                                                                                   |
+
+Upgrade Expo with `pnpm exec expo install expo@^<sdk>` then `expo install --fix`
+in `packages/shell-rn`, update the root override to the SDK's React pin, and run
+`npx expo-doctor` plus `pnpm exec expo export --platform android` (a Metro bundle
+check that needs no device).
 
 ## Trademark
 

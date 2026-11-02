@@ -81,7 +81,7 @@ is planned.
 **6. RN deviations are interim.** The RN port uses a flat coral instead of the
 web's coral→coral-deep gradient, and the platform UI font instead of Space
 Grotesk/Inter, to avoid `expo-font` and a dev-client rebuild. Bundling the fonts
-follows the first real device run of `shell-rn` (see ROADMAP "Next up"), once the
+follows the first real device run of `shell-rn` (GitHub issue #9), once the
 rebuild path is confirmed; the gradient is optional polish.
 
 **7. No formal contrast target.** Legibility is a judgement call. For

@@ -33,7 +33,7 @@ shells**:
 > as `packages/shell-rn` — Expo dev client, Android first, plain `react-native` rather
 > than `react-native-tvos`. TV targets (react-native-tvos, D-pad focus, Tizen/webOS)
 > moved to Phase 3. The two-shell architecture is unchanged. Current phasing lives in
-> [ROADMAP.md](ROADMAP.md).
+> the GitHub Issues (`priority:*` labels).
 
 ### 1.2 Design goals
 
@@ -708,7 +708,7 @@ official-store presence is upside pursued via disciplined neutral framing.
 ### Phase 2 — Second shell + IPTV
 
 > **Superseded in part:** the second shell shipped as an Expo **mobile** shell; tvOS and
-> other TV work moved to Phase 3. See [ROADMAP.md](ROADMAP.md) for actual status.
+> other TV work moved to Phase 3. See the GitHub Issues for actual status.
 
 - Bring up the other shell (share core + view-models).
 - IPTV internal addon: M3U + Xtream ingest, EPG pipeline + guide UI.

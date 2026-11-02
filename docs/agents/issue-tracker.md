@@ -14,6 +14,15 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 
 Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.
 
+## Labels
+
+GitHub Issues are the whole backlog (there is no roadmap file). Besides the triage roles (`docs/agents/triage-labels.md`), apply:
+
+- **Priority** (exactly one, unless paused): `priority:high` (do next), `priority:medium`, `priority:low`. A session starts with `gh issue list --label priority:high`.
+- **Area** (any that apply): `web`, `rn`, `core`, `iptv`.
+- **State**: `paused`: deferred, not dropped; carries no priority label while paused (IPTV work is paused).
+- **Type**: `bug`, `enhancement`, `documentation`, `chore`.
+
 ## Pull requests as a triage surface
 
 **PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/triage` reads this flag.)_

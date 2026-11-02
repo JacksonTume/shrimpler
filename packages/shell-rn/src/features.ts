@@ -10,7 +10,7 @@
 
 /**
  * IPTV + EPG (§8, ADR-0006/ADR-0015). **Off** while IPTV work is paused
- * project-wide (docs/ROADMAP.md, 2026-07-29): the subsystem refreshes playlists
+ * project-wide (GitHub issues labelled `paused`): the subsystem refreshes playlists
  * and XMLTV guides against real subscription servers on every app start, which a
  * dev client reloading all day should not be doing while nobody is on it.
  *

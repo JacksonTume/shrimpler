@@ -6,13 +6,15 @@ Native shell (`shell-rn`, Expo).
 
 ## Where to look
 
-- **`docs/ROADMAP.md`** — current status, "Next up", paused work, dependency holds.
-  Start every session here. All dated or status-bearing detail lives there, not in
-  this file.
+- **GitHub Issues** — the backlog: status, priorities, paused work. Start every
+  session with `gh issue list --label priority:high`. All dated or status-bearing
+  detail lives in issues, not in this file. Label vocabulary:
+  `docs/agents/issue-tracker.md`.
 - `docs/TECHNICAL_SPEC.md` — architecture and domain model. Phasing notes in it
-  marked "superseded" defer to the roadmap.
+  marked "superseded" defer to the issues.
 - `docs/adr/` — decisions. Don't re-litigate one; a change gets a new superseding ADR.
-- `README.md` — dev setup, credentials, test commands. `CONTRIBUTING.md` — scope rules.
+- `README.md` — dev setup, credentials, test commands, dependency holds.
+  `CONTRIBUTING.md` — scope rules.
 
 ## Packages and the boundary
 
@@ -30,7 +32,9 @@ Native shell (`shell-rn`, Expo).
 - Each shell owns a composition root that injects adapters into `createCore`.
 - Shells resolve feature gates and pass them in as `CoreFeatures`. IPTV is gated by
   `shell-web/src/features.ts` (`VITE_IPTV_ENABLED`) and `shell-rn/src/features.ts`
-  (a constant — Metro has no build-time env).
+  (a constant — Metro has no build-time env). It is off by default because the
+  subsystem refreshes playlists and XMLTV guides against real subscription servers
+  on every app start; IPTV work is paused (issues labelled `paused`).
 
 ## Commands
 
@@ -71,8 +75,8 @@ the RN bundle without a device, run `pnpm exec expo export --platform android` i
 - Credentials (TMDB key, Real-Debrid token, IPTV accounts) are user-supplied and
   stored locally. Dev values go in git-ignored `packages/shell-web/.env`; never commit
   them.
-- When a roadmap item lands, check it off in `docs/ROADMAP.md` with the date and
-  update "Next up".
+- When work lands, close its issue (reference it from the merge). Re-label
+  priorities if what's next changed.
 - Commits: single-line title only — no body, no trailers, no `Signed-off-by`.
 
 ## Agent skills
