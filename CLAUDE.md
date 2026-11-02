@@ -74,3 +74,17 @@ the RN bundle without a device, run `pnpm exec expo export --platform android` i
 - When a roadmap item lands, check it off in `docs/ROADMAP.md` with the date and
   update "Next up".
 - Commits: single-line title only — no body, no trailers, no `Signed-off-by`.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `JacksonTume/shrimpler`, via `gh`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five default roles, label string = role name. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: root `GLOSSARY.md` (created lazily) plus `docs/adr/`. See `docs/agents/domain.md`.
